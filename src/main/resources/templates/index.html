@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수종별 지압강도 데이터베이스</title>
+
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/bootstrap.min.css" rel="stylesheet">
+    <!-- 커스텀 CSS 파일 연결 -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container my-5">
+
+    <!-- 메인 헤더 영역 -->
+    <div class="main-header text-center">
+        <h2 class="fw-bold mb-2">글로벌 수종별 지압강도 (Dowel Bearing Strength) DB</h2>
+        <p class="mb-0 opacity-75">학명 기준 목재 물리·역학적 특성 데이터 및 원문 출처 연결</p>
+    </div>
+
+    <!-- 검색창 영역 -->
+    <div class="row mb-4">
+        <div class="col-md-5 ms-auto search-box">
+            <input type="text" id="searchInput" class="form-control" onkeyup="filterTable()" placeholder="🔍 학명 (Scientific Name) 검색...">
+        </div>
+    </div>
+
+    <!-- 데이터 테이블 카드 -->
+    <div class="card custom-card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover text-center align-middle" id="woodTable">
+                    <thead>
+                    <tr>
+                        <th>학명 (Scientific Name)</th>
+                        <th>분류</th>
+                        <th>밀도 (kg/m³)</th>
+                        <th>스크류/파스너 (mm)</th>
+                        <th>섬유평행 지압강도 (MPa)</th>
+                        <th>섬유직각 지압강도 (MPa)</th>
+                        <th>적용 표준</th>
+                        <th>원문 링크</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="wood : ${woodList}">
+                        <td class="scientific-name" th:text="${wood.scientificName}"></td>
+                        <td>
+                                <span class="badge"
+                                      th:classappend="${wood.category == '침엽수'} ? 'bg-success-subtle text-success border border-success' : 'bg-warning-subtle text-warning-emphasis border border-warning'"
+                                      th:text="${wood.category}">
+                                </span>
+                        </td>
+                        <td th:text="${wood.densityRange}"></td>
+                        <td th:text="${wood.screwRange}"></td>
+                        <td class="parallel-val" th:text="${wood.parallelStrength}"></td>
+                        <td class="perp-val" th:text="${wood.perpStrength}"></td>
+                        <td><span class="badge bg-secondary" th:text="${wood.standard}"></span></td>
+                        <td>
+                            <a th:href="${wood.paperUrl}" target="_blank" class="btn btn-sm btn-outline-primary btn-paper">
+                                원문보기 ↗
+                            </a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function filterTable() {
+        let input = document.getElementById("searchInput");
+        let filter = input.value.toLowerCase();
+        let table = document.getElementById("woodTable");
+        let tr = table.getElementsByTagName("tr");
+
+        for (let i = 1; i < tr.length; i++) {
+            let td = tr[i].getElementsByTagName("td")[0];
+            if (td) {
+                let txtValue = td.textContent || td.innerText;
+                if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+</script>
+</body>
+</html>
