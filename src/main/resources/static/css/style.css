@@ -1,103 +1,190 @@
-/* Google Fonts - Noto Sans KR 적용 */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+/* Pretendard 웹 폰트 불러오기 */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+:root {
+    --toss-blue: #3182f6;
+    --toss-blue-hover: #1b64da;
+    --toss-bg: #f2f4f6;
+    --toss-card-bg: #ffffff;
+    --toss-text-main: #191f28;
+    --toss-text-sub: #8b95a1;
+    --toss-text-muted: #b0b8c1;
+    --toss-border: #e5e8eb;
+    --toss-radius-card: 24px;
+    --toss-radius-btn: 12px;
+    --toss-radius-input: 12px;
+}
 
 body {
-    font-family: 'Noto Sans KR', sans-serif;
-    background-color: #f4f6f9;
-    color: #333333;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    background-color: var(--toss-bg);
+    color: var(--toss-text-main);
+    letter-spacing: -0.3px;
+    line-height: 1.5;
 }
 
-/* Header & Card Styling */
-.main-header {
-    background: linear-gradient(135deg, #2c3e50, #3498db);
-    color: white;
-    padding: 2.5rem 1.5rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-.custom-card {
+/* 카드 스타일 */
+.toss-card {
+    background-color: var(--toss-card-bg);
+    border-radius: var(--toss-radius-card);
+    padding: 2.2rem;
     border: none;
-    border-radius: 12px;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
-    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    margin-bottom: 1.5rem;
 }
 
-/* Search Input Styling */
-.search-box input {
-    border-radius: 25px;
-    padding-left: 1.2rem;
-    border: 1px solid #ced4da;
-    transition: all 0.3s ease;
+/* 헤더 영역 */
+.toss-header-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--toss-text-main);
+    letter-spacing: -0.8px;
 }
 
-.search-box input:focus {
-    box-shadow: 0 0 8px rgba(52, 152, 219, 0.4);
-    border-color: #3498db;
+.toss-header-desc {
+    color: var(--toss-text-sub);
+    font-size: 1rem;
+    font-weight: 500;
 }
 
-/* Table Custom Styling */
-.table {
-    margin-bottom: 0;
-}
-
-.table thead {
-    background-color: #2c3e50;
-    color: #ffffff;
-}
-
-.table th {
+/* 토스 버튼 스타일 */
+.btn-toss-primary {
+    background-color: var(--toss-blue);
+    color: #ffffff !important;
+    border: none;
+    border-radius: var(--toss-radius-btn);
+    padding: 0.8rem 1.4rem;
     font-weight: 600;
     font-size: 0.95rem;
-    padding: 1rem 0.75rem;
-    vertical-align: middle;
-    border: none;
-}
-
-.table td {
-    padding: 0.9rem 0.75rem;
-    vertical-align: middle;
-    border-bottom: 1px solid #eef2f5;
-}
-
-/* Table Hover & Row Animations */
-.table-hover tbody tr {
     transition: background-color 0.2s ease, transform 0.1s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.table-hover tbody tr:hover {
-    background-color: #f0f7ff;
+.btn-toss-primary:hover {
+    background-color: var(--toss-blue-hover);
+    transform: translateY(-1px);
 }
 
-/* Scientific Name Styling */
-.scientific-name {
-    font-style: italic;
+.btn-toss-secondary {
+    background-color: #e5e8eb;
+    color: #4e5968 !important;
+    border: none;
+    border-radius: var(--toss-radius-btn);
+    padding: 0.8rem 1.4rem;
     font-weight: 600;
-    color: #1a252f;
+    font-size: 0.95rem;
+    transition: background-color 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Value Highlights */
-.parallel-val {
-    color: #2980b9;
-    font-weight: 700;
+.btn-toss-secondary:hover {
+    background-color: #d1d6db;
+    color: #333d4b !important;
 }
 
-.perp-val {
-    color: #27ae60;
-    font-weight: 700;
+/* 폼 입력창 스타일 */
+.form-label-toss {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #4e5968;
+    margin-bottom: 0.5rem;
 }
 
-/* Link Button Design */
-.btn-paper {
-    border-radius: 20px;
-    padding: 0.25rem 0.85rem;
-    font-size: 0.85rem;
-    font-weight: 500;
+.form-control-toss {
+    background-color: #f9fafb;
+    border: 1px solid var(--toss-border);
+    border-radius: var(--toss-radius-input);
+    padding: 0.85rem 1.1rem;
+    font-size: 0.98rem;
+    color: var(--toss-text-main);
     transition: all 0.2s ease;
 }
 
-.btn-paper:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+.form-control-toss:focus {
+    background-color: #ffffff;
+    border-color: var(--toss-blue);
+    box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.12);
+    outline: none;
+}
+
+/* 테이블 스타일 */
+.toss-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.toss-table th {
+    color: var(--toss-text-sub);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 1rem 0.8rem;
+    border-bottom: 1px solid var(--toss-border);
+    background-color: transparent;
+}
+
+.toss-table td {
+    padding: 1.1rem 0.8rem;
+    border-bottom: 1px solid #f2f4f6;
+    font-size: 0.95rem;
+    color: var(--toss-text-main);
+}
+
+.toss-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.toss-table tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+/* 뱃지 스타일 */
+.badge-toss-blue {
+    background-color: #e8f3ff;
+    color: var(--toss-blue);
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+}
+
+.badge-toss-yellow {
+    background-color: #fff8e6;
+    color: #ff9500;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+}
+
+.badge-toss-gray {
+    background-color: #f2f4f6;
+    color: #6b7684;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+}
+
+/* 원문보기 링크 버튼 */
+.btn-toss-link {
+    background-color: #f2f4f6;
+    color: #4e5968;
+    border-radius: 8px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-toss-link:hover {
+    background-color: #e8f3ff;
+    color: var(--toss-blue);
 }

@@ -15,12 +15,12 @@ import java.util.List;
 @Controller
 public class WoodController {
 
+    // 1. 메인 목록 페이지
     @GetMapping("/")
     public String getWoodDataList(Model model) {
         List<WoodEmbedmentDto> list = new ArrayList<>();
 
         try {
-            // src/main/resources/wood_data.csv 파일 읽기
             ClassPathResource resource = new ClassPathResource("wood_data.csv");
             BufferedReader br = new BufferedReader(
                     new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8)
@@ -30,25 +30,23 @@ public class WoodController {
             boolean isHeader = true;
 
             while ((line = br.readLine()) != null) {
-                // 첫 줄(헤더 제목)은 데이터로 추가하지 않고 넘어감
                 if (isHeader) {
                     isHeader = false;
                     continue;
                 }
 
-                // 쉼표(,)를 기준으로 컬럼 분리
                 String[] tokens = line.split(",");
 
                 if (tokens.length >= 8) {
                     list.add(new WoodEmbedmentDto(
-                            tokens[0].trim(), // 학명
-                            tokens[1].trim(), // 분류
-                            tokens[2].trim(), // 밀도 범위
-                            tokens[3].trim(), // 스크류 범위
-                            tokens[4].trim(), // 섬유평행 지압강도
-                            tokens[5].trim(), // 섬유직각 지압강도
-                            tokens[6].trim(), // 적용 표준
-                            tokens[7].trim()  // 원문 URL
+                            tokens[0].trim(),
+                            tokens[1].trim(),
+                            tokens[2].trim(),
+                            tokens[3].trim(),
+                            tokens[4].trim(),
+                            tokens[5].trim(),
+                            tokens[6].trim(),
+                            tokens[7].trim()
                     ));
                 }
             }
@@ -59,5 +57,11 @@ public class WoodController {
 
         model.addAttribute("woodList", list);
         return "index";
+    }
+
+    // 2. 예측 계산기 전용 페이지 이동
+    @GetMapping("/calculator")
+    public String showCalculator() {
+        return "calculator";
     }
 }

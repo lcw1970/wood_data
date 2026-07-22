@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지압강도 & UTM 하중 예측기</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- 화면 전체 크기에서도 무조건 화면 중앙에 위치시키는 최상위 컨테이너 -->
+<div style="max-width: 1000px; width: 92%; margin: 40px auto;">
+
+    <!-- 상단 헤더 카드 -->
+    <div class="toss-card d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <h1 class="toss-header-title mb-1">지압강도 & UTM 예측기</h1>
+            <p class="toss-header-desc mb-0">Eurocode 5 및 NDS 기준 이론식 시뮬레이션</p>
+        </div>
+        <div>
+            <a th:href="@{/}" class="btn-toss-secondary">
+                ← DB 목록으로
+            </a>
+        </div>
+    </div>
+
+    <!-- 입력 카드 -->
+    <div class="toss-card">
+        <h5 class="fw-bold mb-4" style="color: var(--toss-text-main);">변수 입력</h5>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label-toss">목재 밀도 ρ (kg/m³)</label>
+                <input type="number" id="calcDensity" class="form-control form-control-toss" placeholder="예: 450" value="450">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label-toss">파스너 직경 d (mm)</label>
+                <input type="number" id="calcDiameter" class="form-control form-control-toss" placeholder="예: 10" value="10">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label-toss">시편 두께 t (mm)</label>
+                <input type="number" id="calcThickness" class="form-control form-control-toss" placeholder="예: 40" value="40">
+            </div>
+        </div>
+        <div class="mt-4 text-end">
+            <button class="btn-toss-primary w-100 py-3 text-center fs-6 fw-bold" onclick="calculateStrength()">
+                실시간 계산하기
+            </button>
+        </div>
+    </div>
+
+    <!-- 결과 카드 세트 -->
+    <div class="row g-3 text-center">
+        <div class="col-md-4">
+            <div class="toss-card py-4 h-100 d-flex flex-column justify-content-center">
+                <span class="badge-toss-gray mx-auto mb-2">Eurocode 5 (섬유평행)</span>
+                <h2 class="fw-bold text-primary my-2" id="resEc0" style="font-size: 2rem;">- MPa</h2>
+                <small class="text-muted">f_h = 0.082 × (1 - 0.01d) × ρ</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="toss-card py-4 h-100 d-flex flex-column justify-content-center">
+                <span class="badge-toss-gray mx-auto mb-2">NDS (섬유평행)</span>
+                <h2 class="fw-bold text-primary my-2" id="resNds0" style="font-size: 2rem;">- MPa</h2>
+                <small class="text-muted">f_h = 77.25 × G (전건비중)</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="toss-card py-4 h-100 d-flex flex-column justify-content-center">
+                <span class="badge-toss-gray mx-auto mb-2">5톤 UTM 예측 하중 (P)</span>
+                <h2 class="fw-bold my-2" id="resUtmLoad" style="font-size: 1.6rem;">- kN</h2>
+                <div>
+                    <span id="utmStatus" class="badge-toss-gray">대기 중</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function calculateStrength() {
+        let rho = parseFloat(document.getElementById('calcDensity').value);
+        let d = parseFloat(document.getElementById('calcDiameter').value);
+        let t = parseFloat(document.getElementById('calcThickness').value);
+
+        if (!rho || !d || !t) {
+            alert("모든 입력값을 입력해 주세요.");
+            return;
+        }
+
+        let fh_ec0 = 0.082 * (1 - 0.01 * d) * rho;
+        let G = rho / 1000.0;
+        let fh_nds0 = 77.25 * G;
+
+        let avgFh = (fh_ec0 + fh_nds0) / 2.0;
+        let loadKn = (avgFh * d * t) / 1000.0;
+        let loadTon = loadKn / 9.81;
+
+        document.getElementById('resEc0').innerText = fh_ec0.toFixed(1) + ' MPa';
+        document.getElementById('resNds0').innerText = fh_nds0.toFixed(1) + ' MPa';
+        document.getElementById('resUtmLoad').innerText = loadKn.toFixed(1) + ' kN (' + loadTon.toFixed(2) + 't)';
+
+        let utmStatus = document.getElementById('utmStatus');
+        if (loadKn <= 50.0) {
+            utmStatus.innerText = '✅ 5톤 UTM 실험 가능';
+            utmStatus.className = 'badge-toss-blue fs-6';
+        } else {
+            utmStatus.innerText = '⚠️ 5톤 UTM 용량 초과';
+            utmStatus.className = 'badge-toss-yellow fs-6';
+            utmStatus.style.backgroundColor = '#ffeeee';
+            utmStatus.style.color = '#ff3b30';
+        }
+    }
+
+    window.onload = function() {
+        calculateStrength();
+    };
+</script>
+</body>
+</html>

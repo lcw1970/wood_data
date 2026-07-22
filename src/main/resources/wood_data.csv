@@ -1,20 +1,26 @@
-﻿scientificName,category,densityRange,screwRange,parallelStren,perpStrength,standard,paperUrl,
-Pinus densiflora,침엽수,450 - 500,6월 12일,21.0 - 25.5,14.5 - 18.0,KS F 2156,https://doi.org/10.5658/WOOD.2022.50.1.1,
-Larix kaempferi,침엽수,500 - 550,6월 12일,22.0 - 28.0,6.5 - 18.0,KS F 2156,https://doi.org/10.5658/WOOD.2022.50.1.1,
-Pinus koraiensis,침엽수,430 - 480,6월 12일,20.5 - 24.5,15.0 - 18.0,KS F 2156,https://doi.org/10.15376/biores.18.2.3576-3589,
-Cryptomeria japonica,침엽수,340 - 390,6월 10일,14.5 - 18.0,13.0 - 16.0,KS F 2156,https://doi.org/10.15376/biores.18.2.3576-3589,
-Pinus taeda,침엽수,520 - 580,6월 16일,38.0 - 45.0,19.0 - 23.0,ASTM D5764,https://www.fpl.fs.usda.gov/documents/fplrp/fplrp505.pdf,
-Pseudotsuga menziesii,침엽수,470 - 530,6월 16일,35.0 - 41.0,16.5 - 20.0,ASTM D5764,https://www.fpl.fs.usda.gov/documents/fplrp/fplrp566.pdf,
-Picea abies,침엽수,390 - 450,6월 12일,28.0 - 34.0,13.5 - 17.0,EN 383,https://doi.org/10.1007/s00107-013-0718-z,
-Pinus radiata,침엽수,380 - 440,6월 12일,28.5 - 34.0,12.0 - 15.0,ISO 10984-2,https://doi.org/10.1016/j.conbuildmat.2022.128130,
-Fagus sylvatica,활엽수,640 - 720,6월 16일,52.0 - 62.0,30.0 - 38.0,EN 383,https://doi.org/10.1007/s00107-013-0718-z,
-Quercus robur,활엽수,650 - 750,6월 16일,50.0 - 65.0,28.0 - 38.0,EN 383,https://doi.org/10.1007/s00107-013-0718-z,
-Chamaecyparis obtusa,침엽수,400 - 450,6월 12일,18.5 - 23.0,12.0 - 15.5,KS F 2156,https://doi.org/10.5658/WOOD.2021.49.5.411,
-Betula pendula,활엽수,580 - 670,6월 16일,42.0 - 50.0,25.0 - 32.0,EN 383,https://doi.org/10.1007/s00107-013-0718-z,
-Fraxinus excelsior,활엽수,650 - 750,6월 16일,48.0 - 58.0,26.0 - 35.0,EN 383,https://doi.org/10.1007/s00107-013-0718-z,
-Castanea crenata,활엽수,550 - 650,6월 16일,38.0 - 46.0,22.0 - 28.0,EN 383,https://doi.org/10.1007/s00107-013-0718-z,
-Tsuga heterophylla,침엽수,420 - 480,6월 16일,24.0 - 30.0,14.0 - 18.0,ASTM D5764,https://www.fpl.fs.usda.gov/documents/fplrp/fplrp566.pdf,
-Populus albaglandulosa,활엽수,380 - 440,6월 12일,18.0 - 22.0,10.0 - 13.5,KS F 2156,https://doi.org/10.5658/WOOD.2020.48.3.315,
-Acer saccharum,활엽수,600 - 700,6월 16일,45.0 - 55.0,24.0 - 32.0,ASTM D5764,https://www.fpl.fs.usda.gov/documents/fplrp/fplrp505.pdf,
-,,,,,,,,
-,,,,,,,,scientificName
+﻿scientificName,category,densityRange,screwRange,parallelStren,perpStrength,standard,paperUrl
+Pinus densiflora,침엽수,450 - 500,6 - 12,21.0 - 25.5,14.5 - 18.0,KS F 2156,https://doi.org/10.5658/WOOD.2022.50.1.1
+Larix kaempferi,침엽수,500 - 550,6 - 12,22.0 - 28.0,6.5 - 18.0,KS F 2156,https://doi.org/10.5658/WOOD.2022.50.1.1
+Pinus koraiensis,침엽수,430 - 480,6 - 12,20.5 - 24.5,15.0 - 18.0,KS F 2156,https://doi.org/10.15376/biores.18.2.3576-3589
+Cryptomeria japonica,침엽수,340 - 390,6 - 10,14.5 - 18.0,13.0 - 16.0,KS F 2156,https://doi.org/10.15376/biores.18.2.3576-3589
+Pinus taeda,침엽수,520 - 580,6 - 16,38.0 - 45.0,19.0 - 23.0,ASTM D5764,https://www.fpl.fs.usda.gov/documents/fplrp/fplrp505.pdf
+Pseudotsuga menziesii,침엽수,470 - 530,6 - 16,35.0 - 41.0,16.5 - 20.0,ASTM D5764,https://www.fpl.fs.usda.gov/documents/fplrp/fplrp566.pdf
+Picea abies,침엽수,390 - 450,6 - 12,28.0 - 34.0,13.5 - 17.0,EN 383,https://doi.org/10.1007/s00107-013-0718-z
+Pinus radiata,침엽수,380 - 440,6 - 12,28.5 - 34.0,12.0 - 15.0,ISO 10984-2,https://doi.org/10.1016/j.conbuildmat.2022.128130
+Fagus sylvatica,활엽수,640 - 720,6 - 16,52.0 - 62.0,30.0 - 38.0,EN 383,https://doi.org/10.1007/s00107-013-0718-z
+Quercus robur,활엽수,650 - 750,6 - 16,50.0 - 65.0,28.0 - 38.0,EN 383,https://doi.org/10.1007/s00107-013-0718-z
+Chamaecyparis obtusa,침엽수,400 - 450,6 - 12,18.5 - 23.0,12.0 - 15.5,KS F 2156,https://doi.org/10.5658/WOOD.2021.49.5.411
+Betula pendula,활엽수,580 - 670,6 - 16,42.0 - 50.0,25.0 - 32.0,EN 383,https://doi.org/10.1007/s00107-013-0718-z
+Fraxinus excelsior,활엽수,650 - 750,6 - 16,48.0 - 58.0,26.0 - 35.0,EN 383,https://doi.org/10.1007/s00107-013-0718-z
+Castanea crenata,활엽수,550 - 650,6 - 16,38.0 - 46.0,22.0 - 28.0,EN 383,https://doi.org/10.1007/s00107-013-0718-z
+Tsuga heterophylla,침엽수,420 - 480,6 - 16,24.0 - 30.0,14.0 - 18.0,ASTM D5764,https://www.fpl.fs.usda.gov/documents/fplrp/fplrp566.pdf
+Populus albaglandulosa,활엽수,380 - 440,6 - 12,18.0 - 22.0,10.0 - 13.5,KS F 2156,https://doi.org/10.5658/WOOD.2020.48.3.315
+Acer saccharum,활엽수,600 - 700,6 - 16,45.0 - 55.0,24.0 - 32.0,ASTM D5764,https://www.fpl.fs.usda.gov/documents/fplrp/fplrp505.pdf
+Larix kaempferi (낙엽송 CLT),침엽수 직교집성판,500 - 550,6.3,40.28 - 55.55 (평균 47.81),31.58 - 44.83 (평균 36.94),ASTM D5764,https://www.woodj.org/archive/view_article?pid=wood-45-6-746
+Pinus densiflora (소나무 CLT/각재),침엽수 직교집성판,450 - 500,8.0 - 12.0,21.0 - 25.5 (평균 23.43),14.5 - 18.0 (평균 16.16),EN 383,https://www.woodj.org/func/download_file_with_id?bf_id=1
+Mengkulang (멩쿨랑 GLT),활엽수 집성재,750 - 790,16.0 - 20.0,16.24 - 22.69,-,ASTM D5764 / EN 383,https://jmeche.uitm.edu.my/images/journal/vol_13_1/vol_13_1_article_5.pdf
+Populus x euroamericana (포플러 GLT),활엽수 집성재,330 - 360,9.0 - 12.0,18.0 - 22.0,10.0 - 13.5,EN 383,https://doi.org/10.3390/f13081154
+Fagus sylvatica (너도밤나무 GLT),활엽수 집성재,620 - 720,9.0 - 12.0,52.0 - 62.0,30.0 - 38.0,EN 383,https://doi.org/10.3390/f13081154
+Spruce-Pine-Fir (SPF GLT),침엽수 집성재,380 - 410,18.0 - 26.0,23.6 - 26.6,12.25 - 13.3,EN 383 기준 준용,https://ascelibrary.org/doi/10.1061/%28ASCE%29AE.1943-5568.0000523
+Pseudotsuga menziesii (더글라스 퍼 GLT),침엽수 집성재,550 - 600,12.7,21.39 (설계값),14.33 (설계값),CSA O86-19,https://cwc.ca/wp-content/uploads/2025/03/Connections-Sample-Design.pdf
+Spruce-Pine (스프루스-파인 GLT),침엽수 집성재,450 - 500,12.7,19.21 (설계값),8.45 (설계값),CSA O86-19,https://cwc.ca/wp-content/uploads/2025/03/Connections-Sample-Design.pdf
