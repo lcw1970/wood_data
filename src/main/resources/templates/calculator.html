@@ -20,6 +20,27 @@
             padding: 16px;
         }
 
+        /* 새로 계산 시 결과창 강조 애니메이션 */
+        @keyframes resultHighlight {
+            0% {
+                transform: translateY(10px);
+                opacity: 0;
+                box-shadow: 0 0 0 rgba(13, 110, 253, 0);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(13, 110, 253, 0.3);
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            }
+        }
+
+        .result-animated {
+            animation: resultHighlight 0.5s ease-out forwards;
+        }
+
         /* 모바일 반응형 커스텀 스타일 */
         @media (max-width: 768px) {
             .container-wrapper {
@@ -72,71 +93,101 @@
     <!-- 계산기 폼 카드 -->
     <div class="toss-card">
         <form th:action="@{/calculator}" method="post">
-            <div class="row g-3 mb-4">
-                <div class="col-12 col-md-4">
-                    <label for="density" class="form-label fw-bold d-block mb-2">목재 밀도 (kg/m³)</label>
-                    <input type="number" step="0.1" id="density" name="density" class="form-control form-control-toss w-100" placeholder="예: 450" required>
-                </div>
-                <div class="col-12 col-md-4">
-                    <label for="diameter" class="form-label fw-bold d-block mb-2">파스너 직경 (mm)</label>
-                    <input type="number" step="0.1" id="diameter" name="diameter" class="form-control form-control-toss w-100" placeholder="예: 8" required>
-                </div>
-                <div class="col-12 col-md-4">
-                    <label for="thickness" class="form-label fw-bold d-block mb-2">시편 두께 (mm)</label>
-                    <input type="number" step="0.1" id="thickness" name="thickness" class="form-control form-control-toss w-100" placeholder="예: 40" required>
+
+            <!-- 계산 목적 선택 -->
+            <div class="mb-4">
+                <label class="form-label fw-bold d-block mb-2">계산 목적 선택</label>
+                <div class="btn-group w-100" role="group" aria-label="계산 모드 선택">
+                    <input type="radio" class="btn-check" name="calcMode" id="modeStrength" value="STRENGTH" checked onchange="toggleCalcMode()">
+                    <label class="btn btn-outline-primary py-2.5 fw-semibold" for="modeStrength">1. 지압강도만 계산</label>
+
+                    <input type="radio" class="btn-check" name="calcMode" id="modeUtm" value="UTM" onchange="toggleCalcMode()">
+                    <label class="btn btn-outline-primary py-2.5 fw-semibold" for="modeUtm">2. 지압강도 + 5톤 UTM 판별</label>
                 </div>
             </div>
 
-            <button type="submit" class="btn-toss-primary btn-mobile-full w-100 py-3 fw-bold">
-                지압강도 및 UTM 가능 여부 계산하기
+            <!-- 입력 필드 영역 -->
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6" id="densityCol">
+                    <label for="density" class="form-label fw-bold d-block mb-2">목재 밀도 (kg/m³)</label>
+                    <input type="number" step="0.1" id="density" name="density" class="form-control form-control-toss w-100" placeholder="예: 450" required>
+                </div>
+
+                <div class="col-12 col-md-6" id="diameterCol">
+                    <label for="diameter" class="form-label fw-bold d-block mb-2">파스너 직경 (mm)</label>
+                    <input type="number" step="0.1" id="diameter" name="diameter" class="form-control form-control-toss w-100" placeholder="예: 8" required>
+                </div>
+
+                <!-- 시편 두께 -->
+                <div class="col-12 col-md-12" id="thicknessCol" style="display: none;">
+                    <label for="thickness" class="form-label fw-bold d-block mb-2">시편 두께 (mm)</label>
+                    <input type="number" step="0.1" id="thickness" name="thickness" class="form-control form-control-toss w-100" placeholder="예: 40">
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn-toss-primary btn-mobile-full w-100 py-3 fw-bold">
+                지압강도 계산하기
             </button>
         </form>
     </div>
 
-    <!-- 계산 결과 및 5톤 UTM 시각화 게이지 카드 -->
-    <div th:if="${result != null}" class="toss-card border-primary mb-4">
-        <h3 class="fw-bold mb-3 fs-5 fs-md-4">계산 결과 및 판별</h3>
+    <!-- 1. 처음 들어왔을 때 안내 문구 상자 (결과가 없을 때) -->
+    <div th:if="${result == null}" class="toss-card text-center py-4 bg-light border border-dashed">
+        <div class="text-muted fs-6">
+            💡 위 입력창에 수치를 입력하고 <strong>[계산하기]</strong> 버튼을 누르면 예측 결과가 여기에 표시됩니다.
+        </div>
+    </div>
+
+    <!-- 2. 계산 결과 카드 (결과가 있을 때만 강조 표시) -->
+    <div th:if="${result != null}" id="resultCard" class="toss-card border-primary mb-4 result-animated">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 pb-2 border-bottom">
+            <h3 class="fw-bold fs-5 fs-md-4 mb-2 mb-md-0">계산 결과 및 판별</h3>
+            <!-- 입력 조건 요약 태그 -->
+            <div class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fs-6">
+                입력 조건: 밀도 <span th:text="${result['density']}"></span> kg/m³ |
+                직경 <span th:text="${result['diameter']}"></span> mm
+                <span th:if="${result['thickness'] != null}"> | 두께 <span th:text="${result['thickness']}"></span> mm</span>
+            </div>
+        </div>
 
         <!-- 강도 수치 카드 목록 -->
         <div class="row g-3 mb-4">
             <div class="col-12 col-md-4">
                 <div class="p-3 rounded-3 text-center" style="background-color: #f8f9fa; border: 1px solid #dee2e6;">
                     <div class="text-muted mb-1 small">Eurocode 5 강도</div>
-                    <div class="fs-5 fw-bold text-dark" th:text="${result.fhEc5 + ' MPa'}"></div>
+                    <div class="fs-5 fw-bold text-dark" th:text="${result['fhEc5'] + ' MPa'}"></div>
                 </div>
             </div>
             <div class="col-12 col-md-4">
                 <div class="p-3 rounded-3 text-center" style="background-color: #f8f9fa; border: 1px solid #dee2e6;">
                     <div class="text-muted mb-1 small">NDS 강도</div>
-                    <div class="fs-5 fw-bold text-dark" th:text="${result.fhNds + ' MPa'}"></div>
+                    <div class="fs-5 fw-bold text-dark" th:text="${result['fhNds'] + ' MPa'}"></div>
                 </div>
             </div>
             <div class="col-12 col-md-4">
                 <div class="p-3 rounded-3 text-center" style="background-color: #f8f9fa; border: 1px solid #dee2e6;">
                     <div class="text-muted mb-1 small">평균 지압강도</div>
-                    <div class="fs-5 fw-bold text-primary" th:text="${result.fhAvg + ' MPa'}"></div>
+                    <div class="fs-5 fw-bold text-primary" th:text="${result['fhAvg'] + ' MPa'}"></div>
                 </div>
             </div>
         </div>
 
         <!-- 5톤 UTM 하중 여유율 게이지 바 섹션 -->
-        <div class="p-3 p-md-4 rounded-3 border" style="background-color: #f8f9fa;">
+        <div th:if="${result['maxLoadKn'] != null and result['maxLoadKn'] > 0}" class="p-3 p-md-4 rounded-3 border" style="background-color: #f8f9fa;">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="fw-bold fs-6 text-dark">5톤 UTM 하중 여유율</span>
-                <!-- 상태 배지 -->
                 <span class="badge rounded-pill px-3 py-2 fs-6"
-                      th:style="${result.maxLoadKn <= 40 ? 'background-color: #d1fae5; color: #047857;' : (result.maxLoadKn <= 50 ? 'background-color: #fef3c7; color: #b45309;' : 'background-color: #fee2e2; color: #b91c1c;')}">
-                    <span th:if="${result.maxLoadKn <= 40}">✅ 실험 가능</span>
-                    <span th:if="${result.maxLoadKn > 40 and result.maxLoadKn <= 50}">⚠️ 주의 (용량 80% 초과)</span>
-                    <span th:if="${result.maxLoadKn > 50}">❌ 실험 불가 (용량 초과)</span>
+                      th:style="${result['maxLoadKn'] <= 40 ? 'background-color: #d1fae5; color: #047857;' : (result['maxLoadKn'] <= 50 ? 'background-color: #fef3c7; color: #b45309;' : 'background-color: #fee2e2; color: #b91c1c;')}">
+                    <span th:if="${result['maxLoadKn'] <= 40}">✅ 실험 가능</span>
+                    <span th:if="${result['maxLoadKn'] > 40 and result['maxLoadKn'] <= 50}">⚠️ 주의 (용량 80% 초과)</span>
+                    <span th:if="${result['maxLoadKn'] > 50}">❌ 실험 불가 (용량 초과)</span>
                 </span>
             </div>
 
-            <!-- 게이지 트랙 및 막대 (인라인 스타일 직접 지정으로 확실한 출력 보장) -->
+            <!-- 게이지 트랙 및 막대 -->
             <div style="position: relative; width: 100%; height: 22px; background-color: #e9ecef; border-radius: 11px; overflow: hidden; margin-top: 10px; margin-bottom: 6px; border: 1px solid #ced4da;">
-                <div th:style="|width: ${result.maxLoadKn >= 50 ? 100 : (result.maxLoadKn / 50.0 * 100)}%; background-color: ${result.maxLoadKn <= 40 ? '#10b981' : (result.maxLoadKn <= 50 ? '#f59e0b' : '#ef4444')}; height: 100%; transition: width 0.5s ease;|">
+                <div th:style="|width: ${result['maxLoadKn'] >= 50 ? 100 : (result['maxLoadKn'] / 50.0 * 100)}%; background-color: ${result['maxLoadKn'] <= 40 ? '#10b981' : (result['maxLoadKn'] <= 50 ? '#f59e0b' : '#ef4444')}; height: 100%; transition: width 0.5s ease;|">
                 </div>
-                <!-- 80% (40 kN) 주의 임계선 -->
                 <div style="position: absolute; top: 0; bottom: 0; left: 80%; width: 2px; background-color: #6c757d; z-index: 2;" title="주의 임계치 (40 kN)"></div>
             </div>
 
@@ -147,10 +198,10 @@
                 <span>50 kN (100% 한계)</span>
             </div>
 
-            <!-- 하중 수치 및 퍼센트 상세 -->
+            <!-- 하중 수치 상세 -->
             <div class="text-end text-secondary fs-6">
-                예상 파괴 하중: <strong class="text-dark fs-5" th:text="${result.maxLoadKn + ' kN'}">0.0 kN</strong> / 50.0 kN
-                (<span class="fw-semibold text-primary" th:text="${#numbers.formatDecimal(result.maxLoadKn / 50.0 * 100, 1, 1) + '%'}">0.0%</span>)
+                예상 파괴 하중: <strong class="text-dark fs-5" th:text="${result['maxLoadKn'] + ' kN'}">0.0 kN</strong> / 50.0 kN
+                (<span class="fw-semibold text-primary" th:text="${#numbers.formatDecimal(result['maxLoadKn'] / 50.0 * 100, 1, 1) + '%'}">0.0%</span>)
             </div>
         </div>
     </div>
@@ -183,6 +234,48 @@
     </div>
 
 </div>
+
+<!-- 모드 전환 및 스크롤 처리 스크립트 -->
+<script>
+    function toggleCalcMode() {
+        const isUtm = document.getElementById('modeUtm').checked;
+        const thicknessCol = document.getElementById('thicknessCol');
+        const thicknessInput = document.getElementById('thickness');
+        const densityCol = document.getElementById('densityCol');
+        const diameterCol = document.getElementById('diameterCol');
+        const submitBtn = document.getElementById('submitBtn');
+
+        if (isUtm) {
+            densityCol.className = 'col-12 col-md-4';
+            diameterCol.className = 'col-12 col-md-4';
+            thicknessCol.className = 'col-12 col-md-4';
+
+            thicknessCol.style.display = 'block';
+            thicknessInput.disabled = false;
+            thicknessInput.required = true;
+            submitBtn.textContent = '지압강도 및 UTM 가능 여부 계산하기';
+        } else {
+            densityCol.className = 'col-12 col-md-6';
+            diameterCol.className = 'col-12 col-md-6';
+
+            thicknessCol.style.display = 'none';
+            thicknessInput.disabled = true;
+            thicknessInput.required = false;
+            thicknessInput.value = '';
+            submitBtn.textContent = '지압강도 계산하기';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleCalcMode();
+
+        // 계산 결과가 로드되면 결과 카드로 부드럽게 스크롤
+        const resultCard = document.getElementById('resultCard');
+        if (resultCard) {
+            resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    });
+</script>
 
 </body>
 </html>

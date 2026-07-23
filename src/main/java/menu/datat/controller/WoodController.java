@@ -73,7 +73,7 @@ public class WoodController {
     @PostMapping("/calculator")
     public String calculate(@RequestParam("density") double density,
                             @RequestParam("diameter") double diameter,
-                            @RequestParam("thickness") double thickness,
+                            @RequestParam(value = "thickness", required = false) Double thickness,
                             Model model) {
 
         // ① Eurocode 5 기준 지압강도 (MPa)
@@ -86,18 +86,27 @@ public class WoodController {
         // ③ 두 기준의 평균 지압강도 (MPa)
         double fhAvg = (fhEc5 + fhNds) / 2.0;
 
-        // ④ 예상 파괴 하중 P (kN) = (fh_avg * d * t) / 1000
-        double maxLoadKn = (fhAvg * diameter * thickness) / 1000.0;
-
-        // ⑤ 5톤 UTM (50 kN) 용량 초과 여부 판단
-        boolean isPossible = maxLoadKn <= 50.0;
-
         Map<String, Object> result = new HashMap<>();
+        // 입력 조건도 결과 카드에 표기하기 위해 포함
+        result.put("density", density);
+        result.put("diameter", diameter);
+        result.put("thickness", thickness);
+
         result.put("fhEc5", Math.round(fhEc5 * 100.0) / 100.0);
         result.put("fhNds", Math.round(fhNds * 100.0) / 100.0);
         result.put("fhAvg", Math.round(fhAvg * 100.0) / 100.0);
-        result.put("maxLoadKn", Math.round(maxLoadKn * 100.0) / 100.0);
-        result.put("isPossible", isPossible);
+
+        // ④ thickness 값이 전달된 경우에만 (UTM 모드) 하중 및 실험 가능 여부 계산
+        if (thickness != null && thickness > 0) {
+            double maxLoadKn = (fhAvg * diameter * thickness) / 1000.0;
+            boolean isPossible = maxLoadKn <= 50.0;
+
+            result.put("maxLoadKn", Math.round(maxLoadKn * 100.0) / 100.0);
+            result.put("isPossible", isPossible);
+        } else {
+            result.put("maxLoadKn", null);
+            result.put("isPossible", null);
+        }
 
         model.addAttribute("result", result);
         return "calculator";
