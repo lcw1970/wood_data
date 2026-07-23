@@ -3,11 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>지압강도 예측 계산기</title>
+    <title>지압강도 예측 및 5톤 UTM 가능 여부 계산기</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <style>
-        /* 모바일 반응형 스타일 */
+        .toss-card {
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .formula-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #0d6efd;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        /* 모바일 반응형 커스텀 스타일 */
         @media (max-width: 768px) {
             .container-wrapper {
                 margin: 15px auto !important;
@@ -20,9 +33,21 @@
             .toss-header-title {
                 font-size: 1.35rem !important;
             }
+            .toss-header-desc {
+                font-size: 0.85rem !important;
+            }
             .btn-mobile-full {
                 width: 100% !important;
                 text-align: center;
+            }
+            .form-label {
+                font-size: 0.88rem !important;
+                margin-bottom: 6px !important;
+                display: block !important;
+            }
+            .formula-box {
+                padding: 12px !important;
+                font-size: 0.85rem !important;
             }
         }
     </style>
@@ -34,8 +59,8 @@
     <!-- 상단 헤더 카드 -->
     <div class="toss-card d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3">
         <div>
-            <h1 class="toss-header-title mb-1">지압강도 예측 계산기</h1>
-            <p class="toss-header-desc mb-0">목재 밀도 및 파스너 직경 기반 강도 계산</p>
+            <h1 class="toss-header-title mb-1">지압강도 & 5톤 UTM 계산기</h1>
+            <p class="toss-header-desc mb-0">Eurocode 5 & NDS 평균 지압강도 기반 실험 판별</p>
         </div>
         <div>
             <a th:href="@{/}" class="btn-toss-secondary btn-mobile-full d-inline-block">
@@ -48,38 +73,86 @@
     <div class="toss-card">
         <form th:action="@{/calculator}" method="post">
             <div class="row g-3 mb-4">
-                <div class="col-12 col-md-6">
-                    <label for="density" class="form-label fw-bold">목재 밀도 (kg/m³)</label>
-                    <input type="number" step="0.1" id="density" name="density" class="form-control form-control-toss" placeholder="예: 450" required>
+                <div class="col-12 col-md-4">
+                    <label for="density" class="form-label fw-bold d-block mb-2">목재 밀도 (kg/m³)</label>
+                    <input type="number" step="0.1" id="density" name="density" class="form-control form-control-toss w-100" placeholder="예: 450" required>
                 </div>
-                <div class="col-12 col-md-6">
-                    <label for="diameter" class="form-label fw-bold">파스너 직경 (mm)</label>
-                    <input type="number" step="0.1" id="diameter" name="diameter" class="form-control form-control-toss" placeholder="예: 8" required>
+                <div class="col-12 col-md-4">
+                    <label for="diameter" class="form-label fw-bold d-block mb-2">파스너 직경 (mm)</label>
+                    <input type="number" step="0.1" id="diameter" name="diameter" class="form-control form-control-toss w-100" placeholder="예: 8" required>
+                </div>
+                <div class="col-12 col-md-4">
+                    <label for="thickness" class="form-label fw-bold d-block mb-2">시편 두께 (mm)</label>
+                    <input type="number" step="0.1" id="thickness" name="thickness" class="form-control form-control-toss w-100" placeholder="예: 40" required>
                 </div>
             </div>
 
             <button type="submit" class="btn-toss-primary btn-mobile-full w-100 py-3 fw-bold">
-                🧮 지압강도 계산하기
+                지압강도 및 UTM 가능 여부 계산하기
             </button>
         </form>
     </div>
 
-    <!-- 계산 결과 표시 카드 -->
-    <div th:if="${result != null}" class="toss-card border-primary">
-        <h3 class="fw-bold mb-3">계산 결과</h3>
-        <div class="row g-3">
-            <div class="col-12 col-md-6">
+    <!-- 계산 결과 표시 카드 (결과가 있을 때) -->
+    <div th:if="${result != null}" class="toss-card border-primary mb-4">
+        <h3 class="fw-bold mb-3 fs-5 fs-md-4">계산 결과 및 판별</h3>
+
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-md-4">
                 <div class="p-3 bg-light rounded-3 text-center">
-                    <div class="text-muted mb-1">섬유평행 지압강도</div>
-                    <div class="fs-3 fw-bold text-primary" th:text="${result.parallelStrength + ' MPa'}"></div>
+                    <div class="text-muted mb-1 small">Eurocode 5 강도</div>
+                    <div class="fs-5 fw-bold text-dark" th:text="${result.fhEc5 + ' MPa'}"></div>
                 </div>
             </div>
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-4">
                 <div class="p-3 bg-light rounded-3 text-center">
-                    <div class="text-muted mb-1">섬유직각 지압강도</div>
-                    <div class="fs-3 fw-bold text-success" th:text="${result.perpStrength + ' MPa'}"></div>
+                    <div class="text-muted mb-1 small">NDS 강도</div>
+                    <div class="fs-5 fw-bold text-dark" th:text="${result.fhNds + ' MPa'}"></div>
                 </div>
             </div>
+            <div class="col-12 col-md-4">
+                <div class="p-3 bg-light rounded-3 text-center">
+                    <div class="text-muted mb-1 small">평균 지압강도</div>
+                    <div class="fs-5 fw-bold text-primary" th:text="${result.fhAvg + ' MPa'}"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-3 rounded-3 text-center" th:classappend="${result.isPossible} ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'">
+            <div class="fs-6 mb-1">예상 파괴 하중: <strong th:text="${result.maxLoadKn + ' kN'}"></strong></div>
+            <div class="fs-4 fw-bold" th:if="${result.isPossible}">
+                ✅ 5톤 UTM (50 kN) 장비로 실험 가능
+            </div>
+            <div class="fs-4 fw-bold" th:unless="${result.isPossible}">
+                ❌ 5톤 UTM (50 kN) 용량 초과 (실험 불가)
+            </div>
+        </div>
+    </div>
+
+    <!-- 산출 공식 안내 카드 -->
+    <div class="toss-card">
+        <h4 class="fw-bold mb-3 fs-6 fs-md-5">지압강도 및 예상 하중 산출 공식</h4>
+        <div class="formula-box mb-3">
+            <div class="fw-bold text-primary mb-1">1. Eurocode 5 (유럽) 지압강도 공식</div>
+            <code class="d-block text-dark bg-white p-2 rounded border mb-2">f_h,EC5 = 0.082 × (1 - 0.01 × d) × ρ  (MPa)</code>
+            <small class="text-muted">* ρ: 목재 밀도 (kg/m³), d: 파스너 직경 (mm)</small>
+        </div>
+
+        <div class="formula-box mb-3" style="border-left-color: #198754;">
+            <div class="fw-bold text-success mb-1">2. NDS (미국) 지압강도 공식</div>
+            <code class="d-block text-dark bg-white p-2 rounded border mb-2">f_h,NDS = 77.2 × G  (MPa)</code>
+            <small class="text-muted">* G: 전건비중 (G = ρ / 1000)</small>
+        </div>
+
+        <div class="formula-box mb-3" style="border-left-color: #6f42c1;">
+            <div class="fw-bold mb-1" style="color: #6f42c1;">3. 평균 지압강도 산출</div>
+            <code class="d-block text-dark bg-white p-2 rounded border mb-2">f_h,avg = (f_h,EC5 + f_h,NDS) / 2  (MPa)</code>
+        </div>
+
+        <div class="formula-box" style="border-left-color: #fd7e14;">
+            <div class="fw-bold mb-1" style="color: #fd7e14;">4. 예상 파괴 하중 & 5톤 UTM 가능 여부</div>
+            <code class="d-block text-dark bg-white p-2 rounded border mb-2">P (kN) = (f_h,avg × d × t) / 1000</code>
+            <small class="text-muted">* t: 시편 두께 (mm). 계산된 하중 P ≤ 50 kN (5톤) 일 때 실험 가능</small>
         </div>
     </div>
 
