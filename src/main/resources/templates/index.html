@@ -6,20 +6,66 @@
     <title>수종별 지압강도 데이터베이스</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        /* 모바일 카드 영역 삐져나옴 방지 및 가로 스크롤 최적화 */
+        .toss-card {
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden; /* 카드 영역 밖으로 테이블이 넘치는 것을 방지 */
+        }
+
+        .table-responsive {
+            width: 100% !important;
+            overflow-x: auto !important; /* 하얀 카드 내부에서만 가로 스크롤 활성화 */
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .toss-table {
+            min-width: 720px; /* 테이블 최소 너비를 고정하여 모바일에서도 데이터가 잘리지 않음 */
+            width: 100%;
+        }
+
+        /* 모바일 반응형 커스텀 스타일 */
+        @media (max-width: 768px) {
+            .container-wrapper {
+                margin: 15px auto !important;
+                width: 95% !important;
+            }
+            .toss-card {
+                padding: 16px !important;
+                margin-bottom: 16px !important;
+            }
+            .toss-header-title {
+                font-size: 1.35rem !important;
+            }
+            .toss-header-desc {
+                font-size: 0.85rem !important;
+            }
+            .btn-mobile-full {
+                width: 100% !important;
+                text-align: center;
+            }
+            .toss-table th, .toss-table td {
+                padding: 10px 8px !important;
+                font-size: 0.82rem !important;
+                white-space: nowrap;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<div style="max-width: 1200px; width: 92%; margin: 40px auto;">
+<div class="container-wrapper" style="max-width: 1200px; width: 92%; margin: 40px auto;">
 
     <!-- 상단 헤더 카드 -->
-    <div class="toss-card d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div class="toss-card d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3">
         <div>
             <h1 class="toss-header-title mb-1">글로벌 수종별 지압강도 DB</h1>
             <p class="toss-header-desc mb-0">학명 기준 목재 물성 데이터 및 원문 출처 서비스</p>
         </div>
         <div>
-            <a th:href="@{/calculator}" class="btn-toss-primary">
-                예측 계산기 바로가기
+            <a th:href="@{/calculator}" class="btn-toss-primary btn-mobile-full d-inline-block">
+                예측 계산기 바로가기 ↗
             </a>
         </div>
     </div>
@@ -27,56 +73,45 @@
     <!-- 데이터 목록 카드 -->
     <div class="toss-card">
         <!-- 검색창 -->
-        <div class="row mb-4">
-            <div class="col-md-5 ms-auto">
+        <div class="row mb-3 mb-md-4">
+            <div class="col-12 col-md-5 ms-auto">
                 <input type="text" id="searchInput" class="form-control form-control-toss" onkeyup="filterTable()" placeholder="🔍 학명, 분류, 표준 검색...">
             </div>
         </div>
 
-        <!-- 테이블 -->
+        <!-- 가로 스크롤 가능한 테이블 컨테이너 -->
         <div class="table-responsive">
             <table class="toss-table text-center align-middle" id="woodTable">
                 <thead>
                 <tr>
-                    <th style="width: 60px;">번호</th>
+                    <th style="width: 50px;">번호</th>
                     <th class="text-start">학명 (Scientific Name)</th>
                     <th>분류</th>
                     <th>밀도 (kg/m³)</th>
-                    <th>스크류/파스너 (mm)</th>
-                    <th>섬유평행 지압강도 (MPa)</th>
-                    <th>섬유직각 지압강도 (MPa)</th>
+                    <th>파스너 (mm)</th>
+                    <th>섬유평행 강도 (MPa)</th>
+                    <th>섬유직각 강도 (MPa)</th>
                     <th>표준</th>
                     <th>원문</th>
                 </tr>
                 </thead>
                 <tbody>
-                <!-- 데이터가 없을 때 표시할 행 -->
                 <tr th:if="${#lists.isEmpty(woodList)}">
                     <td colspan="9" class="text-center py-4 text-muted">등록된 목재 데이터가 없습니다.</td>
                 </tr>
-
-                <!-- 목재 데이터 목록 반복 -->
                 <tr th:each="wood, stat : ${woodList}">
-                    <!-- 순번 표시 -->
                     <td class="text-muted fw-semibold" th:text="${stat.count}"></td>
-
-                    <!-- 학명 -->
                     <td class="text-start fw-bold fst-italic" th:text="${wood.scientificName}"></td>
-
-                    <!-- '침엽수' 단어가 포함되어 있으면 파란색, 아니면 노란색 뱃지 적용 -->
                     <td>
                         <span th:class="${#strings.contains(wood.category, '침엽수')} ? 'badge-toss-blue' : 'badge-toss-yellow'"
                               th:text="${wood.category}">
                         </span>
                     </td>
-
                     <td th:text="${wood.densityRange}"></td>
                     <td th:text="${wood.screwRange}"></td>
                     <td class="fw-bold text-primary" th:text="${wood.parallelStrength}"></td>
                     <td class="fw-bold text-success" th:text="${wood.perpStrength}"></td>
                     <td><span class="badge-toss-gray" th:text="${wood.standard}"></span></td>
-
-                    <!-- 원문 링크 (유효성 검사 및 보안 속성 적용) -->
                     <td>
                         <th:block th:if="${wood.paperUrl != null and wood.paperUrl != '' and wood.paperUrl != '-'}">
                             <a th:href="${wood.paperUrl}" target="_blank" rel="noopener noreferrer" class="btn-toss-link">
@@ -103,10 +138,7 @@
         let tr = table.getElementsByTagName("tr");
 
         for (let i = 1; i < tr.length; i++) {
-            // 데이터가 없거나 헤더 행 예외 처리
             if (tr[i].getElementsByTagName("td").length < 9) continue;
-
-            // 학명(1열), 분류(2열), 표준(7열)을 함께 검색 범위로 지정
             let tdName = tr[i].getElementsByTagName("td")[1];
             let tdCategory = tr[i].getElementsByTagName("td")[2];
             let tdStandard = tr[i].getElementsByTagName("td")[7];
