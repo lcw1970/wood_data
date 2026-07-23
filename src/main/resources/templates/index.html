@@ -29,7 +29,7 @@
         <!-- 검색창 -->
         <div class="row mb-4">
             <div class="col-md-5 ms-auto">
-                <input type="text" id="searchInput" class="form-control form-control-toss" onkeyup="filterTable()" placeholder="🔍 학명(Scientific Name) 검색...">
+                <input type="text" id="searchInput" class="form-control form-control-toss" onkeyup="filterTable()" placeholder="🔍 학명, 분류, 표준 검색...">
             </div>
         </div>
 
@@ -50,7 +50,12 @@
                 </tr>
                 </thead>
                 <tbody>
-                <!-- stat 변수를 추가하여 번호(stat.count) 산출 -->
+                <!-- 데이터가 없을 때 표시할 행 -->
+                <tr th:if="${#lists.isEmpty(woodList)}">
+                    <td colspan="9" class="text-center py-4 text-muted">등록된 목재 데이터가 없습니다.</td>
+                </tr>
+
+                <!-- 목재 데이터 목록 반복 -->
                 <tr th:each="wood, stat : ${woodList}">
                     <!-- 순번 표시 -->
                     <td class="text-muted fw-semibold" th:text="${stat.count}"></td>
@@ -60,9 +65,9 @@
 
                     <!-- '침엽수' 단어가 포함되어 있으면 파란색, 아니면 노란색 뱃지 적용 -->
                     <td>
-                            <span th:class="${#strings.contains(wood.category, '침엽수')} ? 'badge-toss-blue' : 'badge-toss-yellow'"
-                                  th:text="${wood.category}">
-                            </span>
+                        <span th:class="${#strings.contains(wood.category, '침엽수')} ? 'badge-toss-blue' : 'badge-toss-yellow'"
+                              th:text="${wood.category}">
+                        </span>
                     </td>
 
                     <td th:text="${wood.densityRange}"></td>
@@ -70,10 +75,17 @@
                     <td class="fw-bold text-primary" th:text="${wood.parallelStrength}"></td>
                     <td class="fw-bold text-success" th:text="${wood.perpStrength}"></td>
                     <td><span class="badge-toss-gray" th:text="${wood.standard}"></span></td>
+
+                    <!-- 원문 링크 (유효성 검사 및 보안 속성 적용) -->
                     <td>
-                        <a th:href="${wood.paperUrl}" target="_blank" class="btn-toss-link">
-                            보기 ↗
-                        </a>
+                        <th:block th:if="${wood.paperUrl != null and wood.paperUrl != '' and wood.paperUrl != '-'}">
+                            <a th:href="${wood.paperUrl}" target="_blank" rel="noopener noreferrer" class="btn-toss-link">
+                                보기 ↗
+                            </a>
+                        </th:block>
+                        <th:block th:unless="${wood.paperUrl != null and wood.paperUrl != '' and wood.paperUrl != '-'}">
+                            <span class="text-muted">-</span>
+                        </th:block>
                     </td>
                 </tr>
                 </tbody>
@@ -91,15 +103,24 @@
         let tr = table.getElementsByTagName("tr");
 
         for (let i = 1; i < tr.length; i++) {
-            // 검색 범위를 학명(2번째 td)으로 지정 (인덱스 1)
-            let td = tr[i].getElementsByTagName("td")[1];
-            if (td) {
-                let txtValue = td.textContent || td.innerText;
-                if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                    tr[i].style.display = "";
-                } else {
-                    tr[i].style.display = "none";
-                }
+            // 데이터가 없거나 헤더 행 예외 처리
+            if (tr[i].getElementsByTagName("td").length < 9) continue;
+
+            // 학명(1열), 분류(2열), 표준(7열)을 함께 검색 범위로 지정
+            let tdName = tr[i].getElementsByTagName("td")[1];
+            let tdCategory = tr[i].getElementsByTagName("td")[2];
+            let tdStandard = tr[i].getElementsByTagName("td")[7];
+
+            let txtName = tdName ? (tdName.textContent || tdName.innerText) : "";
+            let txtCategory = tdCategory ? (tdCategory.textContent || tdCategory.innerText) : "";
+            let txtStandard = tdStandard ? (tdStandard.textContent || tdStandard.innerText) : "";
+
+            let fullText = (txtName + " " + txtCategory + " " + txtStandard).toLowerCase();
+
+            if (fullText.indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
             }
         }
     }
