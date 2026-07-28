@@ -35,10 +35,10 @@
                 <label class="form-label fw-bold d-block mb-2">계산 목적 선택</label>
                 <div class="btn-group w-100" role="group" aria-label="계산 모드 선택">
                     <input type="radio" class="btn-check" name="calcMode" id="modeStrength" value="STRENGTH" checked onchange="toggleCalcMode()">
-                    <label class="btn btn-outline-primary py-2 fw-semibold" for="modeStrength">1. 지압강도만 계산</label>
+                    <label class="btn btn-outline-primary py-2 fw-semibold" for="modeStrength">1.Embedment strength</label>
 
                     <input type="radio" class="btn-check" name="calcMode" id="modeCompressive" value="COMPRESSIVE" onchange="toggleCalcMode()">
-                    <label class="btn btn-outline-primary py-2 fw-semibold" for="modeCompressive">2. 지압강도 + 목재 압축강도 계산</label>
+                    <label class="btn btn-outline-primary py-2 fw-semibold" for="modeCompressive">2.Compressive strength</label>
                 </div>
             </div>
 
@@ -457,12 +457,12 @@
         if (isCompressive) {
             thicknessCol.style.display = 'block';
             thicknessInput.disabled = false;
-            submitBtn.textContent = '지압강도 및 압축강도 계산하기';
+            submitBtn.textContent = 'Compressive strength';
         } else {
             thicknessCol.style.display = 'none';
             thicknessInput.disabled = true;
             thicknessInput.value = '';
-            submitBtn.textContent = '지압강도 계산하기';
+            submitBtn.textContent = 'Embedment strength';
         }
     }
 
