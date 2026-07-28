@@ -62,53 +62,54 @@ public class WoodController {
                             @RequestParam(value = "calcMode", defaultValue = "STRENGTH") String calcMode,
                             Model model) {
 
-        // 1. 지압강도 계산 - 섬유 평행방향 (α = 0°)
-        double fhEc5_0 = 0.082 * (1 - 0.01 * diameter) * density;
-        double fhNds_0 = 77.2 * (density / 1000.0);
-        double fhAvg_0 = (fhEc5_0 + fhNds_0) / 2.0;
+        // 1. 지압강도 계산 (Eurocode 5, NDS 2018, KDS 41 50)
+        double specGravity = density / 1000.0; // NDS/KDS 수식용 전건비중 (G)
 
-        // 1-2. 지압강도 계산 - 섬유 직각방향 (α = 90°, k90 보정 적용)
+        // 1-1. 섬유 평행방향 지압강도 (α = 0°)
+        double fhEc5_0 = 0.082 * (1 - 0.01 * diameter) * density;
+        double fhNds_0 = 77.2 * specGravity;
+        double fhKds_0 = 68.3 * specGravity;
+        double fhAvg_0 = (fhEc5_0 + fhNds_0 + fhKds_0) / 3.0;
+
+        // 1-2. 섬유 직각방향 지압강도 (α = 90°)
         double k90 = 1.35 + 0.015 * diameter;
         double fhEc5_90 = fhEc5_0 / k90;
-        double fhNds_90 = fhNds_0 / k90;
-        double fhAvg_90 = (fhEc5_90 + fhNds_90) / 2.0;
+        double fhNds_90 = 212.0 * Math.pow(specGravity, 1.45) * Math.pow(diameter, -0.5);
+        double fhKds_90 = 180.0 * Math.pow(specGravity, 1.45) * Math.pow(diameter, -0.5);
+        double fhAvg_90 = (fhEc5_90 + fhNds_90 + fhKds_90) / 3.0;
 
-        // 2. 목재 압축강도 추정 계산 (fc,0 & fc,90)
+        // 2. 목재 압축강도 추정 계산 (f_c,0 & f_c,90)
         double fc0 = 0.05 * density;
         double fc90 = 0.005 * density;
         if ("HARDWOOD".equals(woodType)) {
-            fc0 *= 1.15;
-            fc90 *= 1.30;
+            fc0 *= 1.15; fc90 *= 1.30;
         } else if ("CLT".equals(woodType) || "GLULAM".equals(woodType) || "GLT".equals(woodType)) {
             fc0 *= 1.05;
         }
 
+        // 3. 연산 결과 Map 바인딩 (화면 전달용)
         Map<String, Object> result = new HashMap<>();
         result.put("density", Math.round(density * 100.0) / 100.0);
         result.put("diameter", Math.round(diameter * 100.0) / 100.0);
         result.put("thickness", thickness);
         result.put("woodType", woodType);
 
-        // 평행방향 지압강도 (f_h,0)
+        // 지압강도 (f_h,0 및 f_h,90)
         result.put("fhEc5_0", Math.round(fhEc5_0 * 100.0) / 100.0);
         result.put("fhNds_0", Math.round(fhNds_0 * 100.0) / 100.0);
+        result.put("fhKds_0", Math.round(fhKds_0 * 100.0) / 100.0);
         result.put("fhAvg_0", Math.round(fhAvg_0 * 100.0) / 100.0);
 
-        // 직각방향 지압강도 (f_h,90)
         result.put("fhEc5_90", Math.round(fhEc5_90 * 100.0) / 100.0);
         result.put("fhNds_90", Math.round(fhNds_90 * 100.0) / 100.0);
+        result.put("fhKds_90", Math.round(fhKds_90 * 100.0) / 100.0);
         result.put("fhAvg_90", Math.round(fhAvg_90 * 100.0) / 100.0);
 
-        // 기존 변수명 호환용 (기본 평행값)
-        result.put("fhEc5", Math.round(fhEc5_0 * 100.0) / 100.0);
-        result.put("fhNds", Math.round(fhNds_0 * 100.0) / 100.0);
-        result.put("fhAvg", Math.round(fhAvg_0 * 100.0) / 100.0);
-
-        // 압축강도 (f_c)
+        // 목재 압축강도 (f_c)
         result.put("fc0", Math.round(fc0 * 100.0) / 100.0);
         result.put("fc90", Math.round(fc90 * 100.0) / 100.0);
 
-        // 3. 시편 두께 전달 시 UTM 하중 계산 (fhAvg_0 평행방향 강도 기준 적용)
+        // 4. UTM 5톤 판별 하중 계산 (fhAvg_0 평행강도 기준)
         if (thickness != null && thickness > 0) {
             double maxLoadKn = (fhAvg_0 * diameter * thickness) / 1000.0;
             result.put("maxLoadKn", Math.round(maxLoadKn * 100.0) / 100.0);
