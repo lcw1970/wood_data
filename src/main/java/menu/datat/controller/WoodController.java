@@ -11,46 +11,33 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 public class WoodController {
 
-    // 1. 메인 목록 페이지
     @GetMapping("/")
     public String getWoodDataList(Model model) {
         List<WoodEmbedmentDto> list = new ArrayList<>();
-
         try {
             ClassPathResource resource = new ClassPathResource("wood_data.csv");
-            BufferedReader br = new BufferedReader(
-                    new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8)
-            );
-
+            BufferedReader br = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
             String line;
             boolean isHeader = true;
-
             while ((line = br.readLine()) != null) {
-                if (isHeader) {
-                    isHeader = false;
-                    continue;
-                }
-
-                String[] tokens = line.split(",");
-
+                if (isHeader) { isHeader = false; continue; }
+                String[] tokens = line.split(",", -1);
                 if (tokens.length >= 8) {
                     list.add(new WoodEmbedmentDto(
-                            tokens[0].trim(),
-                            tokens[1].trim(),
-                            tokens[2].trim(),
-                            tokens[3].trim(),
-                            tokens[4].trim(),
-                            tokens[5].trim(),
-                            tokens[6].trim(),
-                            tokens[7].trim()
+                            safe(tokens,0),
+                            safe(tokens,1),
+                            safe(tokens,2),
+                            safe(tokens,3),
+                            safe(tokens,4),
+                            safe(tokens,5),
+                            safe(tokens,6),
+                            safe(tokens,7)
                     ));
                 }
             }
@@ -58,57 +45,220 @@ public class WoodController {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         model.addAttribute("woodList", list);
         return "index";
     }
 
-    // 2. 예측 계산기 전용 페이지 이동 (GET)
     @GetMapping("/calculator")
     public String showCalculator() {
         return "calculator";
     }
 
-    // 3. 지압강도 및 5톤 UTM 실험 가능 여부 계산 처리 (POST)
     @PostMapping("/calculator")
     public String calculate(@RequestParam("density") double density,
                             @RequestParam("diameter") double diameter,
                             @RequestParam(value = "thickness", required = false) Double thickness,
+                            @RequestParam(value = "species", required = false) String species,
                             Model model) {
 
-        // ① Eurocode 5 기준 지압강도 (MPa)
+        // 계산: Eurocode5, NDS, 평균
         double fhEc5 = 0.082 * (1 - 0.01 * diameter) * density;
-
-        // ② NDS 기준 지압강도 (MPa) - 전건비중 G = density / 1000
-        double specGravity = density / 1000.0;
-        double fhNds = 77.2 * specGravity;
-
-        // ③ 두 기준의 평균 지압강도 (MPa)
+        double fhNds = 77.2 * (density / 1000.0);
         double fhAvg = (fhEc5 + fhNds) / 2.0;
 
         Map<String, Object> result = new HashMap<>();
-        // 입력 조건도 결과 카드에 표기하기 위해 포함
-        result.put("density", density);
-        result.put("diameter", diameter);
+        result.put("density", Math.round(density * 100.0) / 100.0);
+        result.put("diameter", Math.round(diameter * 100.0) / 100.0);
         result.put("thickness", thickness);
-
         result.put("fhEc5", Math.round(fhEc5 * 100.0) / 100.0);
         result.put("fhNds", Math.round(fhNds * 100.0) / 100.0);
         result.put("fhAvg", Math.round(fhAvg * 100.0) / 100.0);
 
-        // ④ thickness 값이 전달된 경우에만 (UTM 모드) 하중 및 실험 가능 여부 계산
         if (thickness != null && thickness > 0) {
             double maxLoadKn = (fhAvg * diameter * thickness) / 1000.0;
-            boolean isPossible = maxLoadKn <= 50.0;
-
             result.put("maxLoadKn", Math.round(maxLoadKn * 100.0) / 100.0);
-            result.put("isPossible", isPossible);
+            result.put("isPossible", maxLoadKn <= 50.0);
         } else {
             result.put("maxLoadKn", null);
             result.put("isPossible", null);
         }
 
         model.addAttribute("result", result);
+
+        // 유사도 계산 설정 (수종, 밀도, 파스너)
+        final double W_SPECIES = 0.5;
+        final double W_DENSITY = 0.35;
+        final double W_DIAMETER = 0.15;
+        final double MAX_DENSITY_DIFF = 400.0;
+        final double MAX_DIAMETER_DIFF = 30.0;
+
+        List<Map<String, Object>> rows = new ArrayList<>();
+        try {
+            ClassPathResource resource = new ClassPathResource("wood_data.csv");
+            BufferedReader br = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
+            String line;
+            boolean isHeader = true;
+            while ((line = br.readLine()) != null) {
+                if (isHeader) { isHeader = false; continue; }
+                String[] tokens = line.split(",", -1);
+                if (tokens.length >= 8) {
+                    String name = safe(tokens,0);
+                    String category = safe(tokens,1);
+                    String densityRange = safe(tokens,2);
+                    String screwRange = safe(tokens,3);
+                    String parallelStrength = safe(tokens,4);
+
+                    Double midDensity = parseDensityMidpoint(densityRange);
+                    Double midDiameter = parseDiameterMidpoint(screwRange);
+
+                    Map<String,Object> r = new HashMap<>();
+                    r.put("name", name);
+                    r.put("category", category);
+                    r.put("densityRange", densityRange);
+                    r.put("screwRange", screwRange);
+                    r.put("parallelStrength", parallelStrength);
+                    r.put("midDensity", midDensity);
+                    r.put("midDiameter", midDiameter);
+                    rows.add(r);
+                }
+            }
+            br.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        List<Map<String,Object>> scored = new ArrayList<>();
+        for (Map<String,Object> r : rows) {
+            Double midDens = (Double) r.get("midDensity");
+            Double midDia = (Double) r.get("midDiameter");
+            String rowName = (String) r.get("name");
+            String rowCategory = (String) r.get("category");
+
+            double speciesSim = 0.0;
+            if (species != null && !species.trim().isEmpty()) {
+                speciesSim = computeSpeciesSimilarity(species.trim(), rowName, rowCategory);
+            }
+
+            double densityNorm = 1.0;
+            if (midDens != null) densityNorm = Math.min(1.0, Math.abs(density - midDens) / MAX_DENSITY_DIFF);
+
+            double diameterNorm = 1.0;
+            if (midDia != null) diameterNorm = Math.min(1.0, Math.abs(diameter - midDia) / MAX_DIAMETER_DIFF);
+
+            double categoryBoost = 0.0;
+            if ((species == null || species.trim().isEmpty()) && rowCategory != null && !rowCategory.isEmpty()) {
+                double userGuess = (density < 560.0) ? 1.0 : 2.0;
+                if ((rowCategory.contains("침") && userGuess==1.0) || (rowCategory.contains("활") && userGuess==2.0)) categoryBoost = 0.12;
+            }
+
+            double distance = W_SPECIES * (1.0 - speciesSim - categoryBoost) + W_DENSITY * densityNorm + W_DIAMETER * diameterNorm;
+            distance = Math.max(0.0, Math.min(1.0, distance));
+            double similarityPercent = Math.round((1.0 - distance) * 10000.0) / 100.0;
+
+            Map<String,Object> out = new HashMap<>(r);
+            out.put("similarity", similarityPercent);
+            scored.add(out);
+        }
+
+        List<Map<String,Object>> top = scored.stream()
+                .sorted(Comparator.comparingDouble((Map<String, Object> m) -> (Double) m.get("similarity")).reversed())
+                .limit(8)
+                .collect(Collectors.toList());
+
+        List<String> matchLabels = new ArrayList<>();
+        List<Double> matchValues = new ArrayList<>();
+        List<Map<String,Object>> matchDetails = new ArrayList<>();
+        for (Map<String,Object> t : top) {
+            String label = String.format("%s | %s | %s", safeObj(t.get("name")), safeObj(t.get("densityRange")), safeObj(t.get("screwRange")));
+            matchLabels.add(label);
+            matchValues.add((Double) t.get("similarity"));
+            Map<String,Object> d = new HashMap<>();
+            d.put("name", t.get("name"));
+            d.put("category", t.get("category"));
+            d.put("densityRange", t.get("densityRange"));
+            d.put("screwRange", t.get("screwRange"));
+            d.put("parallelStrength", t.get("parallelStrength"));
+            d.put("similarity", t.get("similarity"));
+            matchDetails.add(d);
+        }
+
+        model.addAttribute("matchLabels", matchLabels);
+        model.addAttribute("matchValues", matchValues);
+        model.addAttribute("matchDetails", matchDetails);
+        model.addAttribute("targetDensity", Math.round(density * 100.0) / 100.0);
+        model.addAttribute("targetDiameter", Math.round(diameter * 100.0) / 100.0);
+        model.addAttribute("targetSpecies", (species == null ? "" : species.trim()));
+
         return "calculator";
+    }
+
+    private static String safe(String[] tokens, int idx) {
+        if (tokens == null || idx < 0 || idx >= tokens.length) return "";
+        return tokens[idx] == null ? "" : tokens[idx].trim();
+    }
+    private static String safeObj(Object o) { return o==null ? "" : o.toString(); }
+
+    private double computeSpeciesSimilarity(String userSpecies, String rowSpecies, String rowCategory) {
+        if (userSpecies == null || userSpecies.isEmpty() || rowSpecies == null || rowSpecies.isEmpty()) return 0.0;
+        String u = userSpecies.toLowerCase();
+        String r = rowSpecies.toLowerCase();
+        if (u.equals(r)) return 1.0;
+        String ug = u.split("\\s+")[0];
+        String rg = r.split("\\s+")[0];
+        if (ug.equals(rg)) return 0.8;
+        if (rowCategory != null) {
+            if (rowCategory.contains("침") && (u.contains("pine") || u.contains("pinus") || u.contains("spruce") || u.contains("larix")))
+                return 0.6;
+            if (rowCategory.contains("활") && (u.contains("quercus") || u.contains("fagus") || u.contains("acer") || u.contains("betula")))
+                return 0.6;
+        }
+        double ratio = simpleStringSimilarity(u, r);
+        if (ratio > 0.6) return 0.5;
+        return 0.0;
+    }
+
+    private double simpleStringSimilarity(String a, String b) {
+        if (a == null || b == null) return 0.0;
+        String[] ta = a.split("\\s+");
+        String[] tb = b.split("\\s+");
+        int common = 0;
+        for (String x : ta) for (String y : tb) if (x.equals(y)) common++;
+        int max = Math.max(ta.length, tb.length);
+        if (max == 0) return 0.0;
+        return (double) common / (double) max;
+    }
+
+    private Double parseDensityMidpoint(String s) {
+        if (s == null || s.isEmpty() || s.equals("-")) return null;
+        try {
+            if (s.contains("-")) {
+                String[] parts = s.split("-");
+                if (parts.length >= 2) {
+                    String a = parts[0].replaceAll("[^0-9\\.]", "").trim();
+                    String b = parts[1].replaceAll("[^0-9\\.]", "").trim();
+                    if (!a.isEmpty() && !b.isEmpty()) return (Double.parseDouble(a) + Double.parseDouble(b)) / 2.0;
+                }
+            }
+            String num = s.replaceAll("[^0-9\\.]", "");
+            if (!num.isEmpty()) return Double.parseDouble(num);
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private Double parseDiameterMidpoint(String s) {
+        if (s == null || s.isEmpty() || s.equals("-")) return null;
+        try {
+            if (s.contains("-")) {
+                String[] parts = s.split("-");
+                if (parts.length >= 2) {
+                    String a = parts[0].replaceAll("[^0-9\\.]", "").trim();
+                    String b = parts[1].replaceAll("[^0-9\\.]", "").trim();
+                    if (!a.isEmpty() && !b.isEmpty()) return (Double.parseDouble(a) + Double.parseDouble(b)) / 2.0;
+                }
+            }
+            String num = s.replaceAll("[^0-9\\.]", "");
+            if (!num.isEmpty()) return Double.parseDouble(num);
+        } catch (Exception ignored) {}
+        return null;
     }
 }
