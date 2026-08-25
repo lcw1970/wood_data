@@ -66,17 +66,37 @@ public class WoodController {
         double specGravity = density / 1000.0; // NDS/KDS 수식용 전건비중 (G)
 
         // 1-1. 섬유 평행방향 지압강도 (α = 0°)
-        double fhEc5_0 = 0.082 * (1 - 0.01 * diameter) * density;
-        double fhNds_0 = 77.2 * specGravity;
-        double fhKds_0 = 68.3 * specGravity;
-        double fhAvg_0 = (fhEc5_0 + fhNds_0 + fhKds_0) / 3.0;
+        double fhEc5_0_mean = 0.082 * (1 - 0.01 * diameter) * density;
+        double fhEc5_0_sd = fhEc5_0_mean * 0.15;
+        double fhEc5_0_05 = fhEc5_0_mean - 1.645 * fhEc5_0_sd;
+
+        double fhNds_0_mean = 77.2 * specGravity;
+        double fhNds_0_sd = fhNds_0_mean * 0.15;
+        double fhNds_0_05 = fhNds_0_mean - 1.645 * fhNds_0_sd;
+
+        double fhKds_0_mean = 68.3 * specGravity;
+        double fhKds_0_sd = fhKds_0_mean * 0.15;
+        double fhKds_0_05 = fhKds_0_mean - 1.645 * fhKds_0_sd;
+
+        double fhAvg_0 = (fhEc5_0_mean + fhNds_0_mean + fhKds_0_mean) / 3.0;
+        double fhAvg_0_05 = (fhEc5_0_05 + fhNds_0_05 + fhKds_0_05) / 3.0;
 
         // 1-2. 섬유 직각방향 지압강도 (α = 90°)
         double k90 = 1.35 + 0.015 * diameter;
-        double fhEc5_90 = fhEc5_0 / k90;
-        double fhNds_90 = 212.0 * Math.pow(specGravity, 1.45) * Math.pow(diameter, -0.5);
-        double fhKds_90 = 180.0 * Math.pow(specGravity, 1.45) * Math.pow(diameter, -0.5);
-        double fhAvg_90 = (fhEc5_90 + fhNds_90 + fhKds_90) / 3.0;
+        double fhEc5_90_mean = fhEc5_0_mean / k90;
+        double fhEc5_90_sd = fhEc5_90_mean * 0.15;
+        double fhEc5_90_05 = fhEc5_90_mean - 1.645 * fhEc5_90_sd;
+
+        double fhNds_90_mean = 212.0 * Math.pow(specGravity, 1.45) * Math.pow(diameter, -0.5);
+        double fhNds_90_sd = fhNds_90_mean * 0.15;
+        double fhNds_90_05 = fhNds_90_mean - 1.645 * fhNds_90_sd;
+
+        double fhKds_90_mean = 180.0 * Math.pow(specGravity, 1.45) * Math.pow(diameter, -0.5);
+        double fhKds_90_sd = fhKds_90_mean * 0.15;
+        double fhKds_90_05 = fhKds_90_mean - 1.645 * fhKds_90_sd;
+
+        double fhAvg_90 = (fhEc5_90_mean + fhNds_90_mean + fhKds_90_mean) / 3.0;
+        double fhAvg_90_05 = (fhEc5_90_05 + fhNds_90_05 + fhKds_90_05) / 3.0;
 
         // 2. 목재 압축강도 추정 계산 (f_c,0 & f_c,90)
         double fc0 = 0.05 * density;
@@ -94,24 +114,32 @@ public class WoodController {
         result.put("thickness", thickness);
         result.put("woodType", woodType);
 
-        // 지압강도 (f_h,0 및 f_h,90)
-        result.put("fhEc5_0", Math.round(fhEc5_0 * 100.0) / 100.0);
-        result.put("fhNds_0", Math.round(fhNds_0 * 100.0) / 100.0);
-        result.put("fhKds_0", Math.round(fhKds_0 * 100.0) / 100.0);
+        // 지압강도 (f_h,0 및 f_h,90): 평균값과 5% 하한치 모두 보존
+        result.put("fhEc5_0", Math.round(fhEc5_0_mean * 100.0) / 100.0);
+        result.put("fhEc5_0_05", Math.round(fhEc5_0_05 * 100.0) / 100.0);
+        result.put("fhNds_0", Math.round(fhNds_0_mean * 100.0) / 100.0);
+        result.put("fhNds_0_05", Math.round(fhNds_0_05 * 100.0) / 100.0);
+        result.put("fhKds_0", Math.round(fhKds_0_mean * 100.0) / 100.0);
+        result.put("fhKds_0_05", Math.round(fhKds_0_05 * 100.0) / 100.0);
         result.put("fhAvg_0", Math.round(fhAvg_0 * 100.0) / 100.0);
+        result.put("fhAvg_0_05", Math.round(fhAvg_0_05 * 100.0) / 100.0);
 
-        result.put("fhEc5_90", Math.round(fhEc5_90 * 100.0) / 100.0);
-        result.put("fhNds_90", Math.round(fhNds_90 * 100.0) / 100.0);
-        result.put("fhKds_90", Math.round(fhKds_90 * 100.0) / 100.0);
+        result.put("fhEc5_90", Math.round(fhEc5_90_mean * 100.0) / 100.0);
+        result.put("fhEc5_90_05", Math.round(fhEc5_90_05 * 100.0) / 100.0);
+        result.put("fhNds_90", Math.round(fhNds_90_mean * 100.0) / 100.0);
+        result.put("fhNds_90_05", Math.round(fhNds_90_05 * 100.0) / 100.0);
+        result.put("fhKds_90", Math.round(fhKds_90_mean * 100.0) / 100.0);
+        result.put("fhKds_90_05", Math.round(fhKds_90_05 * 100.0) / 100.0);
         result.put("fhAvg_90", Math.round(fhAvg_90 * 100.0) / 100.0);
+        result.put("fhAvg_90_05", Math.round(fhAvg_90_05 * 100.0) / 100.0);
 
         // 목재 압축강도 (f_c)
         result.put("fc0", Math.round(fc0 * 100.0) / 100.0);
         result.put("fc90", Math.round(fc90 * 100.0) / 100.0);
 
-        // 4. UTM 5톤 판별 하중 계산 (fhAvg_0 평행강도 기준)
+        // 4. UTM 5톤 판별 하중 계산 (하한치 기준으로 보수적으로 계산)
         if (thickness != null && thickness > 0) {
-            double maxLoadKn = (fhAvg_0 * diameter * thickness) / 1000.0;
+            double maxLoadKn = (fhAvg_0_05 * diameter * thickness) / 1000.0;
             result.put("maxLoadKn", Math.round(maxLoadKn * 100.0) / 100.0);
             result.put("isPossible", maxLoadKn <= 50.0);
         } else {
