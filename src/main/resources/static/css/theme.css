@@ -1,0 +1,397 @@
+/* ============================================================
+   1. 라이트 모드 (기본값)
+   ============================================================ */
+:root {
+    --bg-body: #f2f4f6;
+    --bg-card: #ffffff;
+    --bg-inner: #f8f9fa;
+    --text-main: #191f28;
+    --text-sub: #6b7684;
+    --border-c: #e5e8eb;
+    --shadow-c: rgba(0,0,0,0.04);
+    --code-bg: #ffffff;
+    --input-bg: #f9fafb;
+    --input-border: #e5e8eb;
+    --input-text: #191f28;
+
+    /* 채팅 패널 (라이트) */
+    --chat-bg: #ffffff;
+    --chat-border: #e5e8eb;
+    --chat-title: #191f28;
+    --chat-notice-bg: #f2f4f6;
+    --chat-notice-text: #6b7684;
+    --chat-rec-bg: #f9fafb;
+    --chat-rec-border: #e5e8eb;
+    --chat-rec-text: #4e5968;
+    --chat-rec-hover: #f2f4f6;
+    --chat-ai-bg: #f2f4f6;
+    --chat-ai-text: #191f28;
+    --chat-ai-border: #e5e8eb;
+    --chat-user-bg: #3182f6;
+    --chat-input-bg: #f9fafb;
+    --chat-input-border: #e5e8eb;
+    --chat-input-text: #191f28;
+    --chat-send-bg: #3182f6;
+    --chat-send-hover: #1b64da;
+    --chat-placeholder: #b0b8c1;
+}
+
+/* ============================================================
+   2. 다크 모드
+   ============================================================ */
+[data-theme="dark"] {
+    /* style.css 원본 변수 재정의 */
+    --toss-bg: #18181b;
+    --toss-card-bg: #1f1f23;
+    --toss-text-main: #f4f4f5;
+    --toss-text-sub: #a1a1aa;
+    --toss-text-muted: #71717a;
+    --toss-border: #3f3f46;
+
+    /* 자체 변수 */
+    --bg-body: #18181b;
+    --bg-card: #1f1f23;
+    --bg-inner: #27272a;
+    --text-main: #f4f4f5;
+    --text-sub: #a1a1aa;
+    --border-c: #3f3f46;
+    --shadow-c: rgba(0,0,0,0.45);
+    --code-bg: #27272a;
+    --input-bg: #27272a;
+    --input-border: #3f3f46;
+    --input-text: #f4f4f5;
+
+    /* ▼ Bootstrap 5.3 전역 변수 재정의 (테이블 글자 안 보이는 문제 핵심) */
+    --bs-body-color: #f4f4f5;
+    --bs-body-color-rgb: 244, 244, 245;
+    --bs-body-bg: #18181b;
+    --bs-body-bg-rgb: 24, 24, 27;
+    --bs-emphasis-color: #ffffff;
+    --bs-secondary-color: rgba(244, 244, 245, 0.75);
+    --bs-tertiary-color: rgba(244, 244, 245, 0.5);
+    --bs-heading-color: #f4f4f5;
+    --bs-border-color: #3f3f46;
+    --bs-border-color-translucent: rgba(255, 255, 255, 0.15);
+
+    /* 채팅 패널 (다크) */
+    --chat-bg: #1f1f23;
+    --chat-border: #3f3f46;
+    --chat-title: #f4f4f5;
+    --chat-notice-bg: #27272a;
+    --chat-notice-text: #a1a1aa;
+    --chat-rec-bg: #27272a;
+    --chat-rec-border: #3f3f46;
+    --chat-rec-text: #e4e4e7;
+    --chat-rec-hover: #3f3f46;
+    --chat-ai-bg: #27272a;
+    --chat-ai-text: #f4f4f5;
+    --chat-ai-border: #3f3f46;
+    --chat-user-bg: #2563eb;
+    --chat-input-bg: #09090b;
+    --chat-input-border: #27272a;
+    --chat-input-text: #f4f4f5;
+    --chat-send-bg: #2563eb;
+    --chat-send-hover: #1d4ed8;
+    --chat-placeholder: #71717a;
+}
+
+/* ============================================================
+   3. 전환 애니메이션
+   ============================================================ */
+html, body, .toss-card, .bg-white, .formula-box, code,
+.form-control, .form-select, .form-control-toss,
+.llm-chat-panel, .chat-notice, .rec-btn, .message,
+.chat-input-area textarea, .table, .toss-table {
+    transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+/* ============================================================
+   4. 페이지 공통
+   ============================================================ */
+html, body,
+body.bg-light {
+    background-color: var(--bg-body) !important;
+    color: var(--text-main) !important;
+}
+
+.toss-card {
+    background: var(--bg-card) !important;
+    background-color: var(--bg-card) !important;
+    color: var(--text-main) !important;
+    box-shadow: 0 4px 20px var(--shadow-c) !important;
+}
+
+.bg-white,
+.bg-light {
+    background-color: var(--bg-inner) !important;
+    color: var(--text-main) !important;
+}
+
+.formula-box { background-color: var(--bg-inner) !important; }
+
+code,
+.formula-box code {
+    background-color: var(--code-bg) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-c) !important;
+}
+
+.text-dark { color: var(--text-main) !important; }
+.text-muted,
+.text-secondary { color: var(--text-sub) !important; }
+
+h1, h2, h3, h4, h5, h6,
+.toss-header-title,
+strong, b, label, small, p, span, div, td, th {
+    /* 색을 강제하지 않고 상속만 정상화 (utility 클래스 보존) */
+}
+
+h1, h2, h3, h4, h5, h6,
+.toss-header-title { color: var(--text-main); }
+
+.border,
+.rounded,
+.rounded-3,
+.border-dashed { border-color: var(--border-c) !important; }
+
+/* 입력 요소 */
+.form-control,
+.form-select,
+.form-control-toss {
+    background-color: var(--input-bg) !important;
+    color: var(--input-text) !important;
+    border-color: var(--input-border) !important;
+}
+
+.form-control::placeholder,
+.form-control-toss::placeholder { color: var(--chat-placeholder) !important; }
+
+.form-select option {
+    background-color: var(--input-bg);
+    color: var(--input-text);
+}
+
+[data-theme="dark"] .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23a1a1aa' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+/* ============================================================
+   5. 테이블 (Bootstrap 변수 기반 - 글자 안 보임 해결)
+   ============================================================ */
+[data-theme="dark"] .table {
+    --bs-table-color: var(--text-main);
+    --bs-table-color-type: var(--text-main);
+    --bs-table-bg: transparent;
+    --bs-table-accent-bg: transparent;
+    --bs-table-border-color: var(--border-c);
+    --bs-table-striped-color: var(--text-main);
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.04);
+    --bs-table-hover-color: var(--text-main);
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.06);
+    --bs-table-active-color: var(--text-main);
+    --bs-table-active-bg: rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+    border-color: var(--border-c);
+}
+
+[data-theme="dark"] .table-light,
+[data-theme="dark"] .table > thead.table-light {
+    --bs-table-color: var(--text-main);
+    --bs-table-color-type: var(--text-main);
+    --bs-table-bg: var(--bg-inner);
+    --bs-table-border-color: var(--border-c);
+    --bs-table-striped-color: var(--text-main);
+    --bs-table-hover-color: var(--text-main);
+    --bs-table-active-color: var(--text-main);
+    color: var(--text-main);
+}
+
+[data-theme="dark"] .table > :not(caption) > * > * {
+    border-bottom-color: var(--border-c);
+}
+
+/* index.html 커스텀 테이블 */
+.toss-table { color: var(--text-main); }
+
+.toss-table th {
+    color: var(--text-sub) !important;
+    border-bottom-color: var(--border-c) !important;
+    background-color: transparent !important;
+}
+
+.toss-table td {
+    color: var(--text-main);
+    border-bottom-color: var(--border-c) !important;
+    background-color: transparent !important;
+}
+
+[data-theme="dark"] .toss-table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ============================================================
+   6. 뱃지 / 버튼 (다크 전용 보정)
+   ============================================================ */
+[data-theme="dark"] .badge-toss-gray {
+    background-color: var(--bg-inner) !important;
+    color: var(--text-sub) !important;
+}
+[data-theme="dark"] .badge-toss-blue {
+    background-color: rgba(49,130,246,0.18) !important;
+    color: #7ab8ff !important;
+}
+[data-theme="dark"] .badge-toss-yellow {
+    background-color: rgba(255,149,0,0.15) !important;
+    color: #ffc266 !important;
+}
+[data-theme="dark"] .bg-primary-subtle {
+    background-color: rgba(49,130,246,0.18) !important;
+    color: #7ab8ff !important;
+    border-color: rgba(49,130,246,0.35) !important;
+}
+[data-theme="dark"] .bg-primary-subtle.text-primary,
+[data-theme="dark"] .bg-primary-subtle .text-primary {
+    color: #7ab8ff !important;
+}
+[data-theme="dark"] .bg-comp-0 {
+    background: rgba(56,189,248,0.12) !important;
+    border-color: rgba(56,189,248,0.3) !important;
+}
+[data-theme="dark"] .bg-comp-90 {
+    background: rgba(74,222,128,0.12) !important;
+    border-color: rgba(74,222,128,0.3) !important;
+}
+[data-theme="dark"] .text-primary { color: #60a5fa !important; }
+[data-theme="dark"] .text-success { color: #4ade80 !important; }
+[data-theme="dark"] .text-danger  { color: #f87171 !important; }
+
+[data-theme="dark"] .btn-outline-secondary,
+[data-theme="dark"] .btn-outline-primary {
+    color: var(--text-main);
+    border-color: var(--border-c);
+}
+[data-theme="dark"] .btn-outline-secondary:hover,
+[data-theme="dark"] .btn-outline-primary:hover {
+    background-color: var(--bg-inner);
+    color: var(--text-main);
+}
+[data-theme="dark"] .btn-check:checked + .btn-outline-primary {
+    background-color: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+[data-theme="dark"] .btn-toss-secondary,
+[data-theme="dark"] .btn-toss-link {
+    background-color: var(--bg-inner);
+    color: var(--text-main) !important;
+}
+[data-theme="dark"] .btn-toss-link:hover {
+    background-color: rgba(49,130,246,0.18);
+    color: #7ab8ff !important;
+}
+
+/* ============================================================
+   7. LLM 채팅 패널
+   ============================================================ */
+.llm-chat-panel {
+    background-color: var(--chat-bg) !important;
+    border: 1px solid var(--chat-border) !important;
+}
+
+.chat-header h3 { color: var(--chat-title) !important; }
+
+.chat-notice {
+    background-color: var(--chat-notice-bg) !important;
+    color: var(--chat-notice-text) !important;
+}
+
+.rec-btn {
+    background-color: var(--chat-rec-bg) !important;
+    border-color: var(--chat-rec-border) !important;
+    color: var(--chat-rec-text) !important;
+}
+.rec-btn:hover { background-color: var(--chat-rec-hover) !important; }
+
+.message.ai {
+    background-color: var(--chat-ai-bg) !important;
+    color: var(--chat-ai-text) !important;
+    border-color: var(--chat-ai-border) !important;
+}
+.message.user {
+    background-color: var(--chat-user-bg) !important;
+    color: #ffffff !important;
+}
+
+.chat-input-area textarea {
+    background-color: var(--chat-input-bg) !important;
+    border-color: var(--chat-input-border) !important;
+    color: var(--chat-input-text) !important;
+}
+.chat-input-area textarea::placeholder { color: var(--chat-placeholder) !important; }
+.chat-input-area textarea:focus { border-color: var(--chat-send-bg) !important; }
+
+.chat-input-area button { background-color: var(--chat-send-bg) !important; }
+.chat-input-area button:hover { background-color: var(--chat-send-hover) !important; }
+.chat-input-area button:disabled {
+    background-color: var(--chat-rec-hover) !important;
+    color: var(--chat-rec-text) !important;
+}
+
+.loading-spinner {
+    border-color: var(--chat-rec-border) !important;
+    border-top-color: var(--chat-send-bg) !important;
+}
+.loading-text { color: var(--chat-notice-text) !important; }
+.loading-timer { color: var(--chat-send-bg) !important; }
+.loading-timer.timer-warn { color: #f59e0b !important; }
+.loading-timer.timer-slow { color: #ef4444 !important; }
+.msg-elapsed { color: var(--chat-notice-text) !important; }
+
+.chat-messages::-webkit-scrollbar { width: 6px; }
+.chat-messages::-webkit-scrollbar-thumb {
+    background-color: var(--chat-rec-border);
+    border-radius: 3px;
+}
+
+/* ============================================================
+   8. 테마 토글 스위치
+   ============================================================ */
+.theme-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.theme-switch input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.theme-switch-track {
+    width: 52px;
+    height: 28px;
+    background-color: #d1d6db;
+    border-radius: 999px;
+    position: relative;
+    transition: background-color 0.25s ease;
+    box-sizing: border-box;
+}
+
+.theme-switch-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    transition: transform 0.25s ease;
+}
+
+.theme-switch input:checked + .theme-switch-track { background-color: #3182f6; }
+.theme-switch input:checked + .theme-switch-track .theme-switch-thumb { transform: translateX(24px); }
