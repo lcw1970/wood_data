@@ -632,7 +632,7 @@
                 const data = JSON.parse(rawText);
 
                 // JSON 필드명 대응 (answer, result, response, output 등)
-                answerText = data.answer || data.result || data.response || data.output || (typeof data === 'string' ? data : null);
+                answerText = data.answer || data.result || data.response || data.output || data.content || data.text || data.message || (typeof data === 'string' ? data : null);
                 if (data.sources && Array.isArray(data.sources)) {
                     sources = data.sources;
                 }
