@@ -11,437 +11,553 @@
         .formula-box { background-color:#f8f9fa; border-left:4px solid #0d6efd; border-radius:8px; padding:16px; }
         @keyframes resultHighlight { 0%{transform:translateY(10px);opacity:0}50%{box-shadow:0 0 20px rgba(13,110,253,0.2)}100%{transform:translateY(0);opacity:1} }
         .result-animated { animation: resultHighlight 0.5s ease-out forwards; }
+
+        /* LLM 레이아웃 및 패널 스타일 추가 */
+        .main-wrapper {
+            max-width: 1300px;
+            width: 95%;
+            margin: 40px auto;
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        .calculator-container {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .llm-chat-panel {
+            width: 380px;
+            background-color: #18181b;
+            border: 1px solid #27272a;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 780px;
+            position: sticky;
+            top: 20px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .chat-header h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: #f4f4f5;
+        }
+
+        .chat-notice {
+            font-size: 12px;
+            color: #a1a1aa;
+            background-color: #27272a;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .recommended-questions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .rec-btn {
+            background-color: #27272a;
+            border: 1px solid #3f3f46;
+            color: #e4e4e7;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .rec-btn:hover {
+            background-color: #3f3f46;
+            border-color: #52525b;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-right: 4px;
+            margin-bottom: 12px;
+        }
+
+        .message {
+            max-width: 88%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background-color: #2563eb;
+            color: #ffffff;
+        }
+
+        .message.ai {
+            align-self: flex-start;
+            background-color: #27272a;
+            color: #f4f4f5;
+            border: 1px solid #3f3f46;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input-area textarea {
+            flex: 1;
+            background-color: #09090b;
+            border: 1px solid #27272a;
+            color: #f4f4f5;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 13px;
+            resize: none;
+            outline: none;
+        }
+
+        .chat-input-area textarea:focus {
+            border-color: #2563eb;
+        }
+
+        .chat-input-area button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0 16px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        .chat-input-area button:hover {
+            background-color: #1d4ed8;
+        }
+
+        /* 반응형 설정 (화면이 좁아지면 하단으로 배치) */
+        @media (max-width: 992px) {
+            .main-wrapper { flex-direction: column; width: 92%; }
+            .llm-chat-panel { width: 100%; height: 500px; position: static; }
+        }
     </style>
 </head>
 <body class="bg-light">
 
-<div class="container-wrapper" style="max-width: 900px; width: 92%; margin: 40px auto;">
+<div class="main-wrapper">
 
-    <!-- 헤더 카드 -->
-    <div class="toss-card d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3">
-        <div>
-            <h1 class="h4 fw-bold mb-1">Embedment strength estimation (Beta)</h1>
-            <p class="text-muted small mb-0">Eurocode 5, NDS 2018, KDS 41 50 지압강도 및 목재 압축강도 예측</p>
-        </div>
-        <div>
-            <a th:href="@{/}" class="btn btn-outline-secondary btn-sm">← DB 목록으로</a>
-        </div>
-    </div>
+    <!-- 기존 계산기 컨테이너 -->
+    <div class="calculator-container">
 
-    <!-- 입력 폼 카드 -->
-    <div class="toss-card">
-        <form th:action="@{/calculator}" method="post">
-            <div class="mb-3">
-                <label class="form-label fw-bold d-block mb-2">계산 목적 선택</label>
-                <div class="btn-group w-100" role="group" aria-label="계산 모드 선택">
-                    <input type="radio" class="btn-check" name="calcMode" id="modeStrength" value="STRENGTH" checked onchange="toggleCalcMode()">
-                    <label class="btn btn-outline-primary py-2 fw-semibold" for="modeStrength">1.Embedment strength</label>
-
-                    <input type="radio" class="btn-check" name="calcMode" id="modeCompressive" value="COMPRESSIVE" onchange="toggleCalcMode()">
-                    <label class="btn btn-outline-primary py-2 fw-semibold" for="modeCompressive">2.Compressive strength</label>
-                </div>
+        <!-- 헤더 카드 -->
+        <div class="toss-card d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3">
+            <div>
+                <h1 class="h4 fw-bold mb-1">Embedment strength estimation (Beta)</h1>
+                <p class="text-muted small mb-0">Eurocode 5, NDS 2018, KDS 41 50 지압강도 및 목재 압축강도 예측</p>
             </div>
-
-            <div class="row g-3 mb-3">
-                <div class="col-12 col-md-4">
-                    <label for="density" class="form-label fw-bold d-block mb-2">목재 밀도 (kg/m³)</label>
-                    <input type="number" step="0.1" id="density" name="density" class="form-control" placeholder="예: 560" required>
-                </div>
-
-                <div class="col-12 col-md-4">
-                    <label for="diameter" class="form-label fw-bold d-block mb-2">파스너 직경 (mm)</label>
-                    <input type="number" step="0.1" id="diameter" name="diameter" class="form-control" placeholder="예: 12" required>
-                </div>
-
-                <div class="col-12 col-md-4">
-                    <label for="woodType" class="form-label fw-bold d-block mb-2">목재종류 (선택)</label>
-                    <select id="woodType" name="woodType" class="form-select">
-                        <option value="SOFTWOOD">침엽수 (Softwood)</option>
-                        <option value="HARDWOOD">활엽수 (Hardwood)</option>
-                        <option value="GLT">GLT / 집성재 (Glulam)</option>
-                        <option value="CLT">CLT (직교적층재)</option>
-                    </select>
-                </div>
-
-                <div class="col-12 col-md-12" id="thicknessCol" style="display:none;">
-                    <label for="thickness" class="form-label fw-bold d-block mb-2">시편 두께 (mm)</label>
-                    <input type="number" step="0.1" id="thickness" name="thickness" class="form-control" placeholder="예: 40">
-                </div>
-            </div>
-
-            <button type="submit" id="submitBtn" class="btn btn-primary w-100 py-3 fw-bold">계산하기</button>
-        </form>
-    </div>
-
-    <!-- 결과 안내 상자 -->
-    <div th:if="${result == null}" class="toss-card text-center py-4 bg-light border border-dashed">
-        <div class="text-muted fs-6">위 입력창에 수치를 입력하고 <strong>[계산하기]</strong> 버튼을 누르면 예측 결과가 표시됩니다.</div>
-    </div>
-
-    <!-- 계산 결과 카드 -->
-    <div th:if="${result != null}" id="resultCard" class="toss-card border border-primary result-animated">
-
-        <!-- 반응형 헤더 (모바일에서는 세로 배치, PC에서는 좌우 배치) -->
-        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
-            <h3 class="fw-bold fs-5 mb-0 text-nowrap">계산 결과 및 예측</h3>
-            <div class="badge bg-primary-subtle text-primary border px-3 py-2 fs-6 text-wrap text-start">
-                입력: 밀도 <span th:text="${result['density']}"></span> kg/m³ |
-                직경 <span th:text="${result['diameter']}"></span> mm |
-                종류: <span th:text="${result['woodType']}"></span>
+            <div>
+                <a th:href="@{/}" class="btn btn-outline-secondary btn-sm">← DB 목록으로</a>
             </div>
         </div>
 
-        <!-- 1. 지압강도 수치 카드 -->
-        <h5 class="fs-6 fw-bold mb-2 text-secondary">1. 지압강도 (Embedment Strength, f_h)</h5>
+        <!-- 입력 폼 카드 -->
+        <div class="toss-card">
+            <form th:action="@{/calculator}" method="post">
+                <div class="mb-3">
+                    <label class="form-label fw-bold d-block mb-2">계산 목적 선택</label>
+                    <div class="btn-group w-100" role="group" aria-label="계산 모드 선택">
+                        <input type="radio" class="btn-check" name="calcMode" id="modeStrength" value="STRENGTH" checked onchange="toggleCalcMode()">
+                        <label class="btn btn-outline-primary py-2 fw-semibold" for="modeStrength">1.Embedment strength</label>
 
-        <!-- ① 섬유 평행방향 지압강도 (모바일 2x2, PC 1x4 반응형) -->
-        <div class="p-3 mb-3 rounded-3 border bg-white">
-            <div class="fw-bold fs-6 mb-2 text-primary">① 섬유 평행방향 지압강도 (f_h,0, α = 0°)</div>
-            <div class="row g-2 text-center">
-                <div class="col-6 col-md-3">
-                    <div class="p-2 rounded bg-light border h-100">
-                        <div class="text-muted small">Eurocode 5</div>
-                        <div class="fw-bold text-dark" th:text="${result['fhEc5_0'] + ' MPa'}"></div>
+                        <input type="radio" class="btn-check" name="calcMode" id="modeCompressive" value="COMPRESSIVE" onchange="toggleCalcMode()">
+                        <label class="btn btn-outline-primary py-2 fw-semibold" for="modeCompressive">2.Compressive strength</label>
                     </div>
                 </div>
-                <div class="col-6 col-md-3">
-                    <div class="p-2 rounded bg-light border h-100">
-                        <div class="text-muted small">NDS (미국)</div>
-                        <div class="fw-bold text-dark" th:text="${result['fhNds_0'] + ' MPa'}"></div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-4">
+                        <label for="density" class="form-label fw-bold d-block mb-2">목재 밀도 (kg/m³)</label>
+                        <input type="number" step="0.1" id="density" name="density" class="form-control" placeholder="예: 560" required>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label for="diameter" class="form-label fw-bold d-block mb-2">파스너 직경 (mm)</label>
+                        <input type="number" step="0.1" id="diameter" name="diameter" class="form-control" placeholder="예: 12" required>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label for="woodType" class="form-label fw-bold d-block mb-2">목재종류 (선택)</label>
+                        <select id="woodType" name="woodType" class="form-select">
+                            <option value="SOFTWOOD">침엽수 (Softwood)</option>
+                            <option value="HARDWOOD">활엽수 (Hardwood)</option>
+                            <option value="GLT">GLT / 집성재 (Glulam)</option>
+                            <option value="CLT">CLT (직교적층재)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-12" id="thicknessCol" style="display:none;">
+                        <label for="thickness" class="form-label fw-bold d-block mb-2">시편 두께 (mm)</label>
+                        <input type="number" step="0.1" id="thickness" name="thickness" class="form-control" placeholder="예: 40">
                     </div>
                 </div>
-                <div class="col-6 col-md-3">
-                    <div class="p-2 rounded bg-light border h-100">
-                        <div class="text-muted small">KDS 41 50</div>
-                        <div class="fw-bold text-dark" th:text="${result['fhKds_0'] + ' MPa'}"></div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="p-2 rounded bg-light border border-primary h-100">
-                        <div class="text-muted small">3개 기준 평균</div>
-                        <div class="fw-bold text-primary" th:text="${result['fhAvg_0'] + ' MPa'}"></div>
-                    </div>
-                </div>
-            </div>
+
+                <button type="submit" id="submitBtn" class="btn btn-primary w-100 py-3 fw-bold">계산하기</button>
+            </form>
         </div>
 
-        <!-- ② 섬유 직각방향 지압강도 (모바일 2x2, PC 1x4 반응형) -->
-        <div class="p-3 mb-4 rounded-3 border bg-white">
-            <div class="fw-bold fs-6 mb-2 text-success">② 섬유 직각방향 지압강도 (f_h,90, α = 90°)</div>
-            <div class="row g-2 text-center">
-                <div class="col-6 col-md-3">
-                    <div class="p-2 rounded bg-light border h-100">
-                        <div class="text-muted small">Eurocode 5</div>
-                        <div class="fw-bold text-dark" th:text="${result['fhEc5_90'] + ' MPa'}"></div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="p-2 rounded bg-light border h-100">
-                        <div class="text-muted small">NDS (미국)</div>
-                        <div class="fw-bold text-dark" th:text="${result['fhNds_90'] + ' MPa'}"></div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="p-2 rounded bg-light border h-100">
-                        <div class="text-muted small">KDS 41 50</div>
-                        <div class="fw-bold text-dark" th:text="${result['fhKds_90'] + ' MPa'}"></div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="p-2 rounded bg-light border border-success h-100">
-                        <div class="text-muted small">3개 기준 평균</div>
-                        <div class="fw-bold text-success" th:text="${result['fhAvg_90'] + ' MPa'}"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- 2. 목재 압축강도 카드 -->
-        <div id="compressiveSection" class="mb-4">
-            <h5 class="fs-6 fw-bold mb-2 text-secondary">2. 목재 압축강도 (Compressive Strength, f_c)</h5>
-            <div class="row g-3">
-                <div class="col-6">
-                    <div class="p-3 rounded-3 text-center" style="background:#e0f2fe;border:1px solid #bae6fd;">
-                        <div class="text-muted small">섬유 평행 압축강도 (f_c,0)</div>
-                        <div class="fs-5 fw-bold text-primary" th:text="${result['fc0'] + ' MPa'}"></div>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="p-3 rounded-3 text-center" style="background:#f0fdf4;border:1px solid #bbf7d0;">
-                        <div class="text-muted small">섬유 직각 압축강도 (f_c,90)</div>
-                        <div class="fs-5 fw-bold text-success" th:text="${result['fc90'] + ' MPa'}"></div>
-                    </div>
-                </div>
-            </div>
+        <!-- 결과 안내 상자 -->
+        <div th:if="${result == null}" class="toss-card text-center py-4 bg-light border border-dashed">
+            <div class="text-muted fs-6">위 입력창에 수치를 입력하고 <strong>[계산하기]</strong> 버튼을 누르면 예측 결과가 표시됩니다.</div>
         </div>
 
-        <!-- 직경별 지압강도 예측 곡선 및 실험값 범주(Error Bar) 그래프 (상하 1열 세로 배치) -->
-        <div class="p-3 mb-4 border rounded bg-white">
-            <h5 class="fs-6 fw-bold mb-1">기준별 예측값과 실험값 범주 비교 (밀도 ρ = <span th:text="${result['density']}"></span> kg/m³)</h5>
-            <p class="text-muted small mb-4">EC5, NDS, KDS 41 50 기준선 및 실제 실험값 평균·범위 (Mean ± SD Range, Error Bar) 대조</p>
+        <!-- 계산 결과 카드 -->
+        <div th:if="${result != null}" id="resultCard" class="toss-card border border-primary result-animated">
 
-            <div class="row g-4">
-                <!-- (a) 섬유 평행방향 지압강도 (상단 배치) -->
-                <div class="col-12">
-                    <div class="p-3 border rounded bg-white shadow-sm">
-                        <h6 class="fw-bold text-center fs-6 mb-3 text-primary">(a) 섬유 평행방향 지압강도 (parallel to grain, α = 0°)</h6>
-                        <div style="height:360px; position:relative;">
-                            <canvas id="chartParallel"></canvas>
+            <!-- 반응형 헤더 -->
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
+                <h3 class="fw-bold fs-5 mb-0 text-nowrap">계산 결과 및 예측</h3>
+                <div class="badge bg-primary-subtle text-primary border px-3 py-2 fs-6 text-wrap text-start">
+                    입력: 밀도 <span th:text="${result['density']}"></span> kg/m³ |
+                    직경 <span th:text="${result['diameter']}"></span> mm |
+                    종류: <span th:text="${result['woodType']}"></span>
+                </div>
+            </div>
+
+            <!-- 1. 지압강도 수치 카드 -->
+            <h5 class="fs-6 fw-bold mb-2 text-secondary">1. 지압강도 (Embedment Strength, f_h)</h5>
+
+            <!-- ① 섬유 평행방향 지압강도 -->
+            <div class="p-3 mb-3 rounded-3 border bg-white">
+                <div class="fw-bold fs-6 mb-2 text-primary">① 섬유 평행방향 지압강도 (f_h,0, α = 0°)</div>
+                <div class="row g-2 text-center">
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-light border h-100">
+                            <div class="text-muted small">Eurocode 5</div>
+                            <div class="fw-bold text-dark" th:text="${result['fhEc5_0'] + ' MPa'}"></div>
                         </div>
                     </div>
-                </div>
-
-                <!-- (b) 섬유 직각방향 지압강도 (하단 배치) -->
-                <div class="col-12">
-                    <div class="p-3 border rounded bg-white shadow-sm">
-                        <h6 class="fw-bold text-center fs-6 mb-3 text-success">(b) 섬유 직각방향 지압강도 (perpendicular to grain, α = 90°)</h6>
-                        <div style="height:360px; position:relative;">
-                            <canvas id="chartPerpendicular"></canvas>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-light border h-100">
+                            <div class="text-muted small">NDS (미국)</div>
+                            <div class="fw-bold text-dark" th:text="${result['fhNds_0'] + ' MPa'}"></div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-light border h-100">
+                            <div class="text-muted small">KDS 41 50</div>
+                            <div class="fw-bold text-dark" th:text="${result['fhKds_0'] + ' MPa'}"></div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-light border border-primary h-100">
+                            <div class="text-muted small">3개 기준 평균</div>
+                            <div class="fw-bold text-primary" th:text="${result['fhAvg_0'] + ' MPa'}"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-            <script th:inline="javascript">
-                /*<![CDATA[*/
-                document.addEventListener('DOMContentLoaded', function() {
-                    var density = [[${result['density']}]];
-                    var specGravity = density / 1000.0;
-                    var userDiameter = [[${result['diameter']}]];
-                    var userFhAvg_0 = [[${result['fhAvg_0']}]];
-                    var userFhAvg_90 = [[${result['fhAvg_90']}]];
+            <!-- ② 섬유 직각방향 지압강도 -->
+            <div class="p-3 mb-4 rounded-3 border bg-white">
+                <div class="fw-bold fs-6 mb-2 text-success">② 섬유 직각방향 지압강도 (f_h,90, α = 90°)</div>
+                <div class="row g-2 text-center">
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-light border h-100">
+                            <div class="text-muted small">Eurocode 5</div>
+                            <div class="fw-bold text-dark" th:text="${result['fhEc5_90'] + ' MPa'}"></div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-light border h-100">
+                            <div class="text-muted small">NDS (미국)</div>
+                            <div class="fw-bold text-dark" th:text="${result['fhNds_90'] + ' MPa'}"></div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-light border h-100">
+                            <div class="text-muted small">KDS 41 50</div>
+                            <div class="fw-bold text-dark" th:text="${result['fhKds_90'] + ' MPa'}"></div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-light border border-success h-100">
+                            <div class="text-muted small">3개 기준 평균</div>
+                            <div class="fw-bold text-success" th:text="${result['fhAvg_90'] + ' MPa'}"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                    var diameters = [6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
+            <!-- 2. 목재 압축강도 카드 -->
+            <div id="compressiveSection" class="mb-4">
+                <h5 class="fs-6 fw-bold mb-2 text-secondary">2. 목재 압축강도 (Compressive Strength, f_c)</h5>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#e0f2fe;border:1px solid #bae6fd;">
+                            <div class="text-muted small">섬유 평행 압축강도 (f_c,0)</div>
+                            <div class="fs-5 fw-bold text-primary" th:text="${result['fc0'] + ' MPa'}"></div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+                            <div class="text-muted small">섬유 직각 압축강도 (f_c,90)</div>
+                            <div class="fs-5 fw-bold text-success" th:text="${result['fc90'] + ' MPa'}"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                    // 1. 기준별 수식 예측 데이터
-                    var ec5_0 = diameters.map(d => Math.round((0.082 * (1 - 0.01 * d) * density) * 100) / 100);
-                    var nds_0 = diameters.map(d => Math.round((77.2 * specGravity) * 100) / 100);
-                    var kds_0 = diameters.map(d => Math.round((68.3 * specGravity) * 100) / 100);
+            <!-- 그래프 영역 -->
+            <div class="p-3 mb-4 border rounded bg-white">
+                <h5 class="fs-6 fw-bold mb-1">기준별 예측값과 실험값 범주 비교 (밀도 ρ = <span th:text="${result['density']}"></span> kg/m³)</h5>
+                <p class="text-muted small mb-4">EC5, NDS, KDS 41 50 기준선 및 실제 실험값 평균·범위 (Mean ± SD Range, Error Bar) 대조</p>
 
-                    var ec5_90 = diameters.map(d => Math.round(((0.082 * (1 - 0.01 * d) * density) / (1.35 + 0.015 * d)) * 100) / 100);
-                    var nds_90 = diameters.map(d => Math.round((212.0 * Math.pow(specGravity, 1.45) * Math.pow(d, -0.5)) * 100) / 100);
-                    var kds_90 = diameters.map(d => Math.round((180.0 * Math.pow(specGravity, 1.45) * Math.pow(d, -0.5)) * 100) / 100);
+                <div class="row g-4">
+                    <div class="col-12">
+                        <div class="p-3 border rounded bg-white shadow-sm">
+                            <h6 class="fw-bold text-center fs-6 mb-3 text-primary">(a) 섬유 평행방향 지압강도 (parallel to grain, α = 0°)</h6>
+                            <div style="height:360px; position:relative;">
+                                <canvas id="chartParallel"></canvas>
+                            </div>
+                        </div>
+                    </div>
 
-                    // 2. 실험값 평균 및 에러바 범위 (Mean ± SD Range)
-                    // (a) 섬유방향 실험값
-                    var expMean_0 = [null, 46.8, null, 42.5, null, 40.3, null, 39.7, null, 36.9];
-                    var expError_0 = [
-                        null,
-                        { min: 41.5, max: 51.8 },
-                        null,
-                        { min: 37.8, max: 47.2 },
-                        null,
-                        { min: 35.9, max: 44.8 },
-                        null,
-                        { min: 35.3, max: 44.1 },
-                        null,
-                        { min: 32.8, max: 41.0 }
-                    ];
+                    <div class="col-12">
+                        <div class="p-3 border rounded bg-white shadow-sm">
+                            <h6 class="fw-bold text-center fs-6 mb-3 text-success">(b) 섬유 직각방향 지압강도 (perpendicular to grain, α = 90°)</h6>
+                            <div style="height:360px; position:relative;">
+                                <canvas id="chartPerpendicular"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                    // (b) 섬유직각방향 실험값
-                    var expMean_90 = [null, 32.8, null, 28.8, null, 27.8, null, 23.8, null, 22.7];
-                    var expError_90 = [
-                        null,
-                        { min: 28.2, max: 37.3 },
-                        null,
-                        { min: 24.8, max: 32.9 },
-                        null,
-                        { min: 24.0, max: 31.8 },
-                        null,
-                        { min: 20.5, max: 27.2 },
-                        null,
-                        { min: 19.5, max: 25.8 }
-                    ];
+                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                <script th:inline="javascript">
+                    /*<![CDATA[*/
+                    document.addEventListener('DOMContentLoaded', function() {
+                        var density = [[${result['density']}]];
+                        var specGravity = density / 1000.0;
+                        var userDiameter = [[${result['diameter']}]];
+                        var userFhAvg_0 = [[${result['fhAvg_0']}]];
+                        var userFhAvg_90 = [[${result['fhAvg_90']}]];
 
-                    // 현재 사용자 입력 지점
-                    var userPoint_0 = diameters.map(d => d === userDiameter ? userFhAvg_0 : null);
-                    var userPoint_90 = diameters.map(d => d === userDiameter ? userFhAvg_90 : null);
+                        var diameters = [6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
 
-                    // I자 형태의 Error Bar를 그려주는 인라인 Chart.js 플러그인
-                    const errorBarPlugin = {
-                        id: 'errorBarPlugin',
-                        afterDatasetsDraw(chart) {
-                            const ctx = chart.ctx;
-                            chart.data.datasets.forEach((dataset, datasetIndex) => {
-                                if (dataset.errorBars) {
-                                    const meta = chart.getDatasetMeta(datasetIndex);
-                                    meta.data.forEach((element, index) => {
-                                        const err = dataset.errorBars[index];
-                                        if (err && element) {
-                                            const x = element.x;
-                                            const yMin = chart.scales.y.getPixelForValue(err.min);
-                                            const yMax = chart.scales.y.getPixelForValue(err.max);
+                        var ec5_0 = diameters.map(d => Math.round((0.082 * (1 - 0.01 * d) * density) * 100) / 100);
+                        var nds_0 = diameters.map(d => Math.round((77.2 * specGravity) * 100) / 100);
+                        var kds_0 = diameters.map(d => Math.round((68.3 * specGravity) * 100) / 100);
 
-                                            ctx.save();
-                                            ctx.beginPath();
-                                            ctx.strokeStyle = '#1e293b';
-                                            ctx.lineWidth = 1.5;
+                        var ec5_90 = diameters.map(d => Math.round(((0.082 * (1 - 0.01 * d) * density) / (1.35 + 0.015 * d)) * 100) / 100);
+                        var nds_90 = diameters.map(d => Math.round((212.0 * Math.pow(specGravity, 1.45) * Math.pow(d, -0.5)) * 100) / 100);
+                        var kds_90 = diameters.map(d => Math.round((180.0 * Math.pow(specGravity, 1.45) * Math.pow(d, -0.5)) * 100) / 100);
 
-                                            // 수직 에러바 막대
-                                            ctx.moveTo(x, yMin);
-                                            ctx.lineTo(x, yMax);
-                                            // 상단 Cap
-                                            ctx.moveTo(x - 4, yMin);
-                                            ctx.lineTo(x + 4, yMin);
-                                            // 하단 Cap
-                                            ctx.moveTo(x - 4, yMax);
-                                            ctx.lineTo(x + 4, yMax);
+                        var expMean_0 = [null, 46.8, null, 42.5, null, 40.3, null, 39.7, null, 36.9];
+                        var expError_0 = [
+                            null, { min: 41.5, max: 51.8 }, null, { min: 37.8, max: 47.2 },
+                            null, { min: 35.9, max: 44.8 }, null, { min: 35.3, max: 44.1 },
+                            null, { min: 32.8, max: 41.0 }
+                        ];
 
-                                            ctx.stroke();
-                                            ctx.restore();
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    };
+                        var expMean_90 = [null, 32.8, null, 28.8, null, 27.8, null, 23.8, null, 22.7];
+                        var expError_90 = [
+                            null, { min: 28.2, max: 37.3 }, null, { min: 24.8, max: 32.9 },
+                            null, { min: 24.0, max: 31.8 }, null, { min: 20.5, max: 27.2 },
+                            null, { min: 19.5, max: 25.8 }
+                        ];
 
-                    // (a) 섬유방향 차트 생성
-                    new Chart(document.getElementById('chartParallel').getContext('2d'), {
-                        type: 'line',
-                        data: {
-                            labels: diameters.map(d => d + 'mm'),
-                            datasets: [
-                                { label: 'EC5 (EN 1995-1-1)', data: ec5_0, borderColor: '#1d4ed8', borderWidth: 2, pointRadius: 0 },
-                                { label: 'NDS 2018', data: nds_0, borderColor: '#b91c1c', borderWidth: 2, borderDash: [5, 5], pointRadius: 0 },
-                                { label: 'KDS 41 50', data: kds_0, borderColor: '#15803d', borderWidth: 2, borderDash: [8, 3, 2, 3], pointRadius: 0 },
-                                {
-                                    label: '실험값 (Mean ± SD)',
-                                    data: expMean_0,
-                                    errorBars: expError_0,
-                                    borderColor: '#1e293b',
-                                    backgroundColor: '#ffffff',
-                                    pointStyle: 'circle',
-                                    pointRadius: 5,
-                                    pointBorderWidth: 2,
-                                    showLine: false
-                                },
-                                { label: '현재 입력점', data: userPoint_0, borderColor: '#f97316', backgroundColor: '#f97316', pointRadius: 7, showLine: false }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                x: {
-                                    title: { display: true, text: '파스너 직경 d (mm)', font: { weight: 'bold' } }
-                                },
-                                y: {
-                                    title: { display: true, text: '지압강도 f_h,0 (MPa)', font: { weight: 'bold' } },
-                                    min: 0,   // Y축 최솟값을 0으로 고정
-                                    max: 55   // 상단 에러바(51.8 MPa)가 잘리지 않도록 유지
-                                }
+                        var userPoint_0 = diameters.map(d => d === userDiameter ? userFhAvg_0 : null);
+                        var userPoint_90 = diameters.map(d => d === userDiameter ? userFhAvg_90 : null);
+
+                        const errorBarPlugin = {
+                            id: 'errorBarPlugin',
+                            afterDatasetsDraw(chart) {
+                                const ctx = chart.ctx;
+                                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                                    if (dataset.errorBars) {
+                                        const meta = chart.getDatasetMeta(datasetIndex);
+                                        meta.data.forEach((element, index) => {
+                                            const err = dataset.errorBars[index];
+                                            if (err && element) {
+                                                const x = element.x;
+                                                const yMin = chart.scales.y.getPixelForValue(err.min);
+                                                const yMax = chart.scales.y.getPixelForValue(err.max);
+
+                                                ctx.save();
+                                                ctx.beginPath();
+                                                ctx.strokeStyle = '#1e293b';
+                                                ctx.lineWidth = 1.5;
+
+                                                ctx.moveTo(x, yMin); ctx.lineTo(x, yMax);
+                                                ctx.moveTo(x - 4, yMin); ctx.lineTo(x + 4, yMin);
+                                                ctx.moveTo(x - 4, yMax); ctx.lineTo(x + 4, yMax);
+
+                                                ctx.stroke();
+                                                ctx.restore();
+                                            }
+                                        });
+                                    }
+                                });
                             }
-                        },
-                        plugins: [errorBarPlugin]
-                    });
+                        };
 
-                    // (b) 섬유직각방향 차트 생성
-                    new Chart(document.getElementById('chartPerpendicular').getContext('2d'), {
-                        type: 'line',
-                        data: {
-                            labels: diameters.map(d => d + 'mm'),
-                            datasets: [
-                                { label: 'EC5 (EN 1995-1-1)', data: ec5_90, borderColor: '#1d4ed8', borderWidth: 2, pointRadius: 0 },
-                                { label: 'NDS 2018', data: nds_90, borderColor: '#b91c1c', borderWidth: 2, borderDash: [5, 5], pointRadius: 0 },
-                                { label: 'KDS 41 50', data: kds_90, borderColor: '#15803d', borderWidth: 2, borderDash: [8, 3, 2, 3], pointRadius: 0 },
-                                {
-                                    label: '실험값 (Mean ± SD)',
-                                    data: expMean_90,
-                                    errorBars: expError_90,
-                                    borderColor: '#1e293b',
-                                    backgroundColor: '#ffffff',
-                                    pointStyle: 'circle',
-                                    pointRadius: 5,
-                                    pointBorderWidth: 2,
-                                    showLine: false
-                                },
-                                { label: '현재 입력점', data: userPoint_90, borderColor: '#f97316', backgroundColor: '#f97316', pointRadius: 7, showLine: false }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                x: {
-                                    title: { display: true, text: '파스너 직경 d (mm)', font: { weight: 'bold' } }
-                                },
-                                y: {
-                                    title: { display: true, text: '지압강도 f_h,90 (MPa)', font: { weight: 'bold' } },
-                                    min: 0,   // Y축 최솟값을 0으로 고정
-                                    max: 40   // 상단 에러바(37.3 MPa)가 잘리지 않도록 유지
+                        new Chart(document.getElementById('chartParallel').getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: diameters.map(d => d + 'mm'),
+                                datasets: [
+                                    { label: 'EC5 (EN 1995-1-1)', data: ec5_0, borderColor: '#1d4ed8', borderWidth: 2, pointRadius: 0 },
+                                    { label: 'NDS 2018', data: nds_0, borderColor: '#b91c1c', borderWidth: 2, borderDash: [5, 5], pointRadius: 0 },
+                                    { label: 'KDS 41 50', data: kds_0, borderColor: '#15803d', borderWidth: 2, borderDash: [8, 3, 2, 3], pointRadius: 0 },
+                                    {
+                                        label: '실험값 (Mean ± SD)', data: expMean_0, errorBars: expError_0,
+                                        borderColor: '#1e293b', backgroundColor: '#ffffff', pointStyle: 'circle',
+                                        pointRadius: 5, pointBorderWidth: 2, showLine: false
+                                    },
+                                    { label: '현재 입력점', data: userPoint_0, borderColor: '#f97316', backgroundColor: '#f97316', pointRadius: 7, showLine: false }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    x: { title: { display: true, text: '파스너 직경 d (mm)', font: { weight: 'bold' } } },
+                                    y: { title: { display: true, text: '지압강도 f_h,0 (MPa)', font: { weight: 'bold' } }, min: 0, max: 55 }
                                 }
-                            }
-                        },
-                        plugins: [errorBarPlugin]
+                            },
+                            plugins: [errorBarPlugin]
+                        });
+
+                        new Chart(document.getElementById('chartPerpendicular').getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: diameters.map(d => d + 'mm'),
+                                datasets: [
+                                    { label: 'EC5 (EN 1995-1-1)', data: ec5_90, borderColor: '#1d4ed8', borderWidth: 2, pointRadius: 0 },
+                                    { label: 'NDS 2018', data: nds_90, borderColor: '#b91c1c', borderWidth: 2, borderDash: [5, 5], pointRadius: 0 },
+                                    { label: 'KDS 41 50', data: kds_90, borderColor: '#15803d', borderWidth: 2, borderDash: [8, 3, 2, 3], pointRadius: 0 },
+                                    {
+                                        label: '실험값 (Mean ± SD)', data: expMean_90, errorBars: expError_90,
+                                        borderColor: '#1e293b', backgroundColor: '#ffffff', pointStyle: 'circle',
+                                        pointRadius: 5, pointBorderWidth: 2, showLine: false
+                                    },
+                                    { label: '현재 입력점', data: userPoint_90, borderColor: '#f97316', backgroundColor: '#f97316', pointRadius: 7, showLine: false }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    x: { title: { display: true, text: '파스너 직경 d (mm)', font: { weight: 'bold' } } },
+                                    y: { title: { display: true, text: '지압강도 f_h,90 (MPa)', font: { weight: 'bold' } }, min: 0, max: 40 }
+                                }
+                            },
+                            plugins: [errorBarPlugin]
+                        });
                     });
-                });
-                /*]]>*/
-            </script>
+                    /*]]>*/
+                </script>
+            </div>
+
+            <!-- 유사 데이터 수종 테이블 -->
+            <div th:if="${matchDetails != null and #lists.size(matchDetails) > 0}" class="p-3 border rounded bg-white mt-3">
+                <h5 class="fs-6 fw-bold mb-2">유사 DB 수종 세부 정보</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm text-center align-middle mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th>순위</th><th>수종</th><th>분류</th><th>밀도 범위</th><th>파스너</th><th>평행강도 (MPa)</th><th>유사도</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="d, stat : ${matchDetails}">
+                            <td th:text="${stat.count}">1</td>
+                            <td class="fw-semibold" th:text="${d.name}">Pinus ...</td>
+                            <td th:text="${d.category}">침엽수</td>
+                            <td th:text="${d.densityRange}">450 - 500</td>
+                            <td th:text="${d.screwRange}">6 - 12</td>
+                            <td th:text="${d.parallelStrength}">38.0 - 45.0</td>
+                            <td><span class="badge bg-primary-subtle text-primary border" th:text="${d.similarity + '%'}">85.0%</span></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
 
-        <!-- 유사 데이터 수종 테이블 -->
-        <div th:if="${matchDetails != null and #lists.size(matchDetails) > 0}" class="p-3 border rounded bg-white mt-3">
-            <h5 class="fs-6 fw-bold mb-2">유사 DB 수종 세부 정보</h5>
-            <div class="table-responsive">
-                <table class="table table-sm text-center align-middle mb-0">
-                    <thead class="table-light">
-                    <tr>
-                        <th>순위</th>
-                        <th>수종</th>
-                        <th>분류</th>
-                        <th>밀도 범위</th>
-                        <th>파스너</th>
-                        <th>평행강도 (MPa)</th>
-                        <th>유사도</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="d, stat : ${matchDetails}">
-                        <td th:text="${stat.count}">1</td>
-                        <td class="fw-semibold" th:text="${d.name}">Pinus ...</td>
-                        <td th:text="${d.category}">침엽수</td>
-                        <td th:text="${d.densityRange}">450 - 500</td>
-                        <td th:text="${d.screwRange}">6 - 12</td>
-                        <td th:text="${d.parallelStrength}">38.0 - 45.0</td>
-                        <td><span class="badge bg-primary-subtle text-primary border" th:text="${d.similarity + '%'}">85.0%</span></td>
-                    </tr>
-                    </tbody>
-                </table>
+        <!-- 산출 공식 안내 카드 -->
+        <div class="toss-card">
+            <h4 class="fw-bold mb-3 fs-6">지압강도 및 목재 압축강도 산출 공식</h4>
+            <div class="formula-box mb-3">
+                <div class="fw-bold text-primary mb-1">1. Eurocode 5 (유럽) 지압강도 공식</div>
+                <code class="d-block text-dark bg-white p-2 rounded border mb-2">f_h,EC5 = 0.082 × (1 - 0.01 × d) × ρ  (MPa)</code>
+                <small class="text-muted">* ρ: 목재 밀도 (kg/m³), d: 파스너 직경 (mm)</small>
+            </div>
+            <div class="formula-box mb-3" style="border-left-color:#dc3545;">
+                <div class="fw-bold text-danger mb-1">2. NDS 2018 (미국) 지압강도 공식</div>
+                <code class="d-block text-dark bg-white p-2 rounded border mb-2">
+                    f_h,0,NDS = 77.2 × G  (MPa)<br>
+                    f_h,90,NDS = 212 × G^1.45 × d^-0.5  (MPa)
+                </code>
+                <small class="text-muted">* G: 전건비중 (G = ρ / 1000)</small>
+            </div>
+            <div class="formula-box mb-3" style="border-left-color:#198754;">
+                <div class="fw-bold text-success mb-1">3. KDS 41 50 (국내) 지압강도 공식</div>
+                <code class="d-block text-dark bg-white p-2 rounded border mb-2">
+                    f_h,0,KDS = 68.3 × G  (MPa)<br>
+                    f_h,90,KDS = 180 × G^1.45 × d^-0.5  (MPa)
+                </code>
+            </div>
+            <div class="formula-box" style="border-left-color:#6f42c1;">
+                <div class="fw-bold mb-1" style="color:#6f42c1;">4. 목재 압축강도 (f_c,0 & f_c,90) 추정식</div>
+                <code class="d-block text-dark bg-white p-2 rounded border mb-2">
+                    - 섬유 평행 압축강도: f_c,0 ≈ 0.05 × ρ  (MPa)<br>
+                    - 섬유 직각 압축강도: f_c,90 ≈ 0.005 × ρ  (MPa)
+                </code>
             </div>
         </div>
 
     </div>
 
-    <!-- 산출 공식 안내 카드 -->
-    <div class="toss-card">
-        <h4 class="fw-bold mb-3 fs-6">지압강도 및 목재 압축강도 산출 공식</h4>
-        <div class="formula-box mb-3">
-            <div class="fw-bold text-primary mb-1">1. Eurocode 5 (유럽) 지압강도 공식</div>
-            <code class="d-block text-dark bg-white p-2 rounded border mb-2">f_h,EC5 = 0.082 × (1 - 0.01 × d) × ρ  (MPa)</code>
-            <small class="text-muted">* ρ: 목재 밀도 (kg/m³), d: 파스너 직경 (mm)</small>
+    <!-- 우측 LLM 채팅 패널 -->
+    <div class="llm-chat-panel">
+        <div class="chat-header">
+            <h3>💬 궁금한 점을 물어보세요</h3>
         </div>
-        <div class="formula-box mb-3" style="border-left-color:#dc3545;">
-            <div class="fw-bold text-danger mb-1">2. NDS 2018 (미국) 지압강도 공식</div>
-            <code class="d-block text-dark bg-white p-2 rounded border mb-2">
-                f_h,0,NDS = 77.2 × G  (MPa)<br>
-                f_h,90,NDS = 212 × G^1.45 × d^-0.5  (MPa)
-            </code>
-            <small class="text-muted">* G: 전건비중 (G = ρ / 1000)</small>
+        <div class="chat-notice">
+            소장 논문·KDS 설계기준·국가연구과제 보고서를 검색해 근거와 출처로 답합니다.
         </div>
-        <div class="formula-box mb-3" style="border-left-color:#198754;">
-            <div class="fw-bold text-success mb-1">3. KDS 41 50 (국내) 지압강도 공식</div>
-            <code class="d-block text-dark bg-white p-2 rounded border mb-2">
-                f_h,0,KDS = 68.3 × G  (MPa)<br>
-                f_h,90,KDS = 180 × G^1.45 × d^-0.5  (MPa)
-            </code>
+
+        <div class="recommended-questions">
+            <button type="button" class="rec-btn" onclick="sendRecommended(this)">목재의 탄소저장 근거는?</button>
+            <button type="button" class="rec-btn" onclick="sendRecommended(this)">낙엽송의 지압강도는 얼마인가요?</button>
+            <button type="button" class="rec-btn" onclick="sendRecommended(this)">지압강도 실현, 어떻게 하는지 알려줄래?</button>
         </div>
-        <div class="formula-box" style="border-left-color:#6f42c1;">
-            <div class="fw-bold mb-1" style="color:#6f42c1;">4. 목재 압축강도 (f_c,0 & f_c,90) 추정식</div>
-            <code class="d-block text-dark bg-white p-2 rounded border mb-2">
-                - 섬유 평행 압축강도: f_c,0 ≈ 0.05 × ρ  (MPa)<br>
-                - 섬유 직각 압축강도: f_c,90 ≈ 0.005 × ρ  (MPa)
-            </code>
+
+        <div id="chat-messages" class="chat-messages"></div>
+
+        <div class="chat-input-area">
+            <textarea id="chat-input" placeholder="질문 입력 (Enter 전송)" rows="2" onkeydown="handleKeyDown(event)"></textarea>
+            <button type="button" id="send-btn" onclick="sendMessage()">전송</button>
         </div>
     </div>
 
@@ -464,6 +580,108 @@
             thicknessInput.value = '';
             submitBtn.textContent = '계산하기';
         }
+    }
+
+    /* LLM 통신 및 인터랙션 스크립트 */
+    function sendRecommended(btnEl) {
+        const inputEl = document.getElementById('chat-input');
+        inputEl.value = btnEl.innerText;
+        sendMessage();
+    }
+
+    function handleKeyDown(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    }
+
+    async function sendMessage() {
+        const inputEl = document.getElementById('chat-input');
+        const question = inputEl.value.trim();
+        if (!question) return;
+
+        const density = document.getElementById('density')?.value || '';
+        const diameter = document.getElementById('diameter')?.value || '';
+        const woodType = document.getElementById('woodType')?.value || '';
+
+        appendMessage('user', question);
+        inputEl.value = '';
+
+        const loadingId = appendLoading();
+
+        try {
+            const response = await fetch('/api/llm/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question: question,
+                    context: `밀도: ${density}, 직경: ${diameter}, 수종: ${woodType}`
+                })
+            });
+
+            // 1. 응답을 먼저 텍스트로 안전하게 읽어옵니다.
+            const rawText = await response.text();
+            removeMessage(loadingId);
+
+            let answerText = '';
+            let sources = [];
+
+            try {
+                // 2. JSON 파싱 시도
+                const data = JSON.parse(rawText);
+
+                // JSON 필드명 대응 (answer, result, response, output 등)
+                answerText = data.answer || data.result || data.response || data.output || (typeof data === 'string' ? data : null);
+                if (data.sources && Array.isArray(data.sources)) {
+                    sources = data.sources;
+                }
+            } catch (e) {
+                // 3. JSON이 아닌 일반 텍스트/마크다운 형태인 경우 그대로 사용
+                answerText = rawText;
+            }
+
+            // 4. 화면 출력
+            if (answerText) {
+                if (sources.length > 0) {
+                    answerText += '\n\n📌 출처:\n' + sources.map(s => `- ${s}`).join('\n');
+                }
+                appendMessage('ai', answerText);
+            } else {
+                appendMessage('ai', '답변 내용을 표시할 수 없습니다.');
+            }
+
+        } catch (err) {
+            removeMessage(loadingId);
+            console.error('Fetch Error:', err);
+            appendMessage('ai', '서버 통신 중 에러가 발생했습니다.');
+        }
+    }
+
+    function appendMessage(sender, text) {
+        const container = document.getElementById('chat-messages');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${sender}`;
+        msgDiv.innerText = text;
+        container.appendChild(msgDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function appendLoading() {
+        const container = document.getElementById('chat-messages');
+        const loadingDiv = document.createElement('div');
+        const id = 'loading-' + Date.now();
+        loadingDiv.id = id;
+        loadingDiv.className = 'message ai';
+        loadingDiv.innerText = '답변 생성 중...';
+        container.appendChild(loadingDiv);
+        container.scrollTop = container.scrollHeight;
+        return id;
+    }
+
+    function removeMessage(id) {
+        const el = document.getElementById(id);
+        if (el) el.remove();
     }
 
     document.addEventListener('DOMContentLoaded', function() {
