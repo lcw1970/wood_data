@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<body>
+<article th:fragment="card(candidate)" th:id="${candidate.cardId()}" class="literature-card" th:classappend="${candidate.close ? 'literature-close' : 'literature-reference'}">
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+        <div>
+            <h6 class="fw-bold mb-1" th:text="${candidate.wood.scientificName}"></h6>
+            <span class="text-muted small" th:text="${candidate.wood.category}"></span>
+            <span class="text-muted small" th:text="${candidate.wood.fastenerType == 'SCREW' ? ' · 스크류' : ' · 다월·볼트 평활부'}"></span>
+        </div>
+        <span class="comparison-status" th:text="${candidate.conditionLabel}"></span>
+    </div>
+    <div class="row g-3 mb-3">
+        <div class="col-6">
+            <div class="text-muted small">논문 밀도</div>
+            <div class="fw-semibold" th:text="${candidate.density == null ? '미기재' : #numbers.formatDecimal(candidate.density, 1, 1) + ' kg/m³'}"></div>
+            <div th:if="${candidate.density != null}" class="text-muted small" th:text="${'입력과 차이 ' + #numbers.formatDecimal(candidate.densityDifference, 1, 1) + ' kg/m³ (' + #numbers.formatDecimal(candidate.densityDifferencePercent, 1, 1) + '%)'}"></div>
+            <div th:if="${candidate.density == null}" class="text-muted small">밀도 근접 여부를 판단할 수 없음</div>
+        </div>
+        <div class="col-6">
+            <div class="text-muted small">논문 파스너 직경</div>
+            <div class="fw-semibold" th:text="${candidate.diameter + ' mm'}"></div>
+            <div class="text-muted small" th:text="${'입력과 차이 ' + #numbers.formatDecimal(candidate.diameterDifference, 1, 1) + ' mm'}"></div>
+        </div>
+    </div>
+    <div class="paper-strengths mb-3">
+        <div>
+            <span class="text-muted small">논문 실측 · 평행</span>
+            <strong th:text="${candidate.wood.parallelStrength == '-' ? '미수록' : candidate.wood.parallelStrength + ' MPa'}"></strong>
+        </div>
+        <div>
+            <span class="text-muted small">논문 실측 · 직각</span>
+            <strong th:text="${candidate.wood.perpStrength == '-' ? '미수록' : candidate.wood.perpStrength + ' MPa'}"></strong>
+        </div>
+    </div>
+    <div class="small mb-2"><span class="text-muted">시험법: </span><span th:text="${candidate.wood.standard}"></span></div>
+    <p class="small mb-3" th:text="${candidate.wood.testConditions}"></p>
+    <div class="paper-source">
+        <a th:href="${candidate.wood.paperUrl}" th:text="${candidate.wood.sourceTitle}" target="_blank" rel="noopener noreferrer"></a>
+        <div class="text-muted small mt-1" th:text="${candidate.wood.sourceLocation}"></div>
+    </div>
+</article>
+</body>
+</html>

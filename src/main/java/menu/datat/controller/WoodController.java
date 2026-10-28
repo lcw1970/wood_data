@@ -1,6 +1,9 @@
 package menu.datat.controller;
 
 import menu.datat.dto.WoodEmbedmentDto;
+import menu.datat.service.LiteratureComparisonService;
+import menu.datat.service.EmbedmentPredictionService;
+import menu.datat.service.EmbedmentPredictionService.FastenerType;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -12,40 +15,26 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 
 @Controller
 public class WoodController {
 
+    private final LiteratureComparisonService literature;
+
+    private final EmbedmentPredictionService predictions;
+
+    public WoodController(LiteratureComparisonService literature, EmbedmentPredictionService predictions) {
+        this.literature = literature;
+        this.predictions = predictions;
+    }
+
     @GetMapping("/")
     public String getWoodDataList(Model model) {
-        List<WoodEmbedmentDto> list = new ArrayList<>();
-        try {
-            ClassPathResource resource = new ClassPathResource("wood_data.csv");
-            BufferedReader br = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            boolean isHeader = true;
-            while ((line = br.readLine()) != null) {
-                if (isHeader) { isHeader = false; continue; }
-                String[] tokens = line.split(",", -1);
-                if (tokens.length >= 8) {
-                    list.add(new WoodEmbedmentDto(
-                            safe(tokens,0),
-                            safe(tokens,1),
-                            safe(tokens,2),
-                            safe(tokens,3),
-                            safe(tokens,4),
-                            safe(tokens,5),
-                            safe(tokens,6),
-                            safe(tokens,7)
-                    ));
-                }
-            }
-            br.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        List<WoodEmbedmentDto> list = readWoodData();
         model.addAttribute("woodList", list);
+        model.addAttribute("verifiedCount", list.stream().filter(r -> !r.getSourceId().isBlank()).count());
         return "index";
     }
 
@@ -60,43 +49,26 @@ public class WoodController {
                             @RequestParam(value = "thickness", required = false) Double thickness,
                             @RequestParam(value = "woodType", defaultValue = "SOFTWOOD") String woodType,
                             @RequestParam(value = "calcMode", defaultValue = "STRENGTH") String calcMode,
+                            @RequestParam(value = "fastenerType", defaultValue = "SCREW") FastenerType fastenerType,
                             Model model) {
 
-        // 1. 지압강도 계산 (Eurocode 5, NDS 2018, KDS 41 50)
-        double specGravity = density / 1000.0; // NDS/KDS 수식용 전건비중 (G)
+        model.addAttribute("inputDensity", density);
+        model.addAttribute("inputDiameter", diameter);
+        model.addAttribute("inputThickness", thickness);
+        model.addAttribute("inputWoodType", woodType);
+        model.addAttribute("inputCalcMode", calcMode);
+        model.addAttribute("inputFastenerType", fastenerType);
+        if (!Double.isFinite(density) || density <= 0 || !Double.isFinite(diameter)
+                || diameter <= 0 || diameter > 30 || (thickness != null && (!Double.isFinite(thickness) || thickness <= 0))) {
+            model.addAttribute("inputError", "밀도는 0보다 크게, 직경은 0 초과 30 mm 이하으로 입력해 주세요. 두께를 입력하는 경우 0보다 커야 합니다.");
+            return "calculator";
+        }
 
-        // 1-1. 섬유 평행방향 지압강도 (α = 0°)
-        double fhEc5_0_mean = 0.082 * (1 - 0.01 * diameter) * density;
-        double fhEc5_0_sd = fhEc5_0_mean * 0.15;
-        double fhEc5_0_05 = fhEc5_0_mean - 1.645 * fhEc5_0_sd;
-
-        double fhNds_0_mean = 77.2 * specGravity;
-        double fhNds_0_sd = fhNds_0_mean * 0.15;
-        double fhNds_0_05 = fhNds_0_mean - 1.645 * fhNds_0_sd;
-
-        double fhKds_0_mean = 68.3 * specGravity;
-        double fhKds_0_sd = fhKds_0_mean * 0.15;
-        double fhKds_0_05 = fhKds_0_mean - 1.645 * fhKds_0_sd;
-
-        double fhAvg_0 = (fhEc5_0_mean + fhNds_0_mean + fhKds_0_mean) / 3.0;
-        double fhAvg_0_05 = (fhEc5_0_05 + fhNds_0_05 + fhKds_0_05) / 3.0;
-
-        // 1-2. 섬유 직각방향 지압강도 (α = 90°)
-        double k90 = 1.35 + 0.015 * diameter;
-        double fhEc5_90_mean = fhEc5_0_mean / k90;
-        double fhEc5_90_sd = fhEc5_90_mean * 0.15;
-        double fhEc5_90_05 = fhEc5_90_mean - 1.645 * fhEc5_90_sd;
-
-        double fhNds_90_mean = 212.0 * Math.pow(specGravity, 1.45) * Math.pow(diameter, -0.5);
-        double fhNds_90_sd = fhNds_90_mean * 0.15;
-        double fhNds_90_05 = fhNds_90_mean - 1.645 * fhNds_90_sd;
-
-        double fhKds_90_mean = 180.0 * Math.pow(specGravity, 1.45) * Math.pow(diameter, -0.5);
-        double fhKds_90_sd = fhKds_90_mean * 0.15;
-        double fhKds_90_05 = fhKds_90_mean - 1.645 * fhKds_90_sd;
-
-        double fhAvg_90 = (fhEc5_90_mean + fhNds_90_mean + fhKds_90_mean) / 3.0;
-        double fhAvg_90_05 = (fhEc5_90_05 + fhNds_90_05 + fhKds_90_05) / 3.0;
+        var values = predictions.predict(density, diameter, woodType, fastenerType);
+        model.addAttribute("predictionModels", values);
+        if (fastenerType == FastenerType.SCREW) {
+            model.addAttribute("literaturePrediction", predictions.screwLiteraturePrediction(density, diameter));
+        }
 
         // 2. 목재 압축강도 추정 계산 (f_c,0 & f_c,90)
         double fc0 = 0.05 * density;
@@ -113,178 +85,48 @@ public class WoodController {
         result.put("diameter", Math.round(diameter * 100.0) / 100.0);
         result.put("thickness", thickness);
         result.put("woodType", woodType);
-
-        // 지압강도 (f_h,0 및 f_h,90): 평균값과 5% 하한치 모두 보존
-        result.put("fhEc5_0", Math.round(fhEc5_0_mean * 100.0) / 100.0);
-        result.put("fhEc5_0_05", Math.round(fhEc5_0_05 * 100.0) / 100.0);
-        result.put("fhNds_0", Math.round(fhNds_0_mean * 100.0) / 100.0);
-        result.put("fhNds_0_05", Math.round(fhNds_0_05 * 100.0) / 100.0);
-        result.put("fhKds_0", Math.round(fhKds_0_mean * 100.0) / 100.0);
-        result.put("fhKds_0_05", Math.round(fhKds_0_05 * 100.0) / 100.0);
-        result.put("fhAvg_0", Math.round(fhAvg_0 * 100.0) / 100.0);
-        result.put("fhAvg_0_05", Math.round(fhAvg_0_05 * 100.0) / 100.0);
-
-        result.put("fhEc5_90", Math.round(fhEc5_90_mean * 100.0) / 100.0);
-        result.put("fhEc5_90_05", Math.round(fhEc5_90_05 * 100.0) / 100.0);
-        result.put("fhNds_90", Math.round(fhNds_90_mean * 100.0) / 100.0);
-        result.put("fhNds_90_05", Math.round(fhNds_90_05 * 100.0) / 100.0);
-        result.put("fhKds_90", Math.round(fhKds_90_mean * 100.0) / 100.0);
-        result.put("fhKds_90_05", Math.round(fhKds_90_05 * 100.0) / 100.0);
-        result.put("fhAvg_90", Math.round(fhAvg_90 * 100.0) / 100.0);
-        result.put("fhAvg_90_05", Math.round(fhAvg_90_05 * 100.0) / 100.0);
+        result.put("fastenerType", fastenerType.name());
+        result.put("fastenerLabel", fastenerType.getLabel());
 
         // 목재 압축강도 (f_c)
         result.put("fc0", Math.round(fc0 * 100.0) / 100.0);
         result.put("fc90", Math.round(fc90 * 100.0) / 100.0);
 
-        // 4. UTM 5톤 판별 하중 계산 (하한치 기준으로 보수적으로 계산)
-        if (thickness != null && thickness > 0) {
-            double maxLoadKn = (fhAvg_0_05 * diameter * thickness) / 1000.0;
-            result.put("maxLoadKn", Math.round(maxLoadKn * 100.0) / 100.0);
-            result.put("isPossible", maxLoadKn <= 50.0);
-        } else {
-            result.put("maxLoadKn", null);
-            result.put("isPossible", null);
-        }
-
         model.addAttribute("result", result);
 
-        // 유사도 계산 설정 (목재종류, 밀도, 파스너)
-        final double W_WOODTYPE = 0.5;
-        final double W_DENSITY = 0.35;
-        final double W_DIAMETER = 0.15;
-        final double MAX_DENSITY_DIFF = 400.0;
-        final double MAX_DIAMETER_DIFF = 30.0;
-
-        List<Map<String, Object>> rows = new ArrayList<>();
-        try {
-            ClassPathResource resource = new ClassPathResource("wood_data.csv");
-            BufferedReader br = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            boolean isHeader = true;
-            while ((line = br.readLine()) != null) {
-                if (isHeader) { isHeader = false; continue; }
-                String[] tokens = line.split(",", -1);
-                if (tokens.length >= 8) {
-                    String name = safe(tokens,0);
-                    String category = safe(tokens,1);
-                    String densityRange = safe(tokens,2);
-                    String screwRange = safe(tokens,3);
-                    String parallelStrength = safe(tokens,4);
-
-                    Double midDensity = parseDensityMidpoint(densityRange);
-                    Double midDiameter = parseDiameterMidpoint(screwRange);
-
-                    Map<String,Object> r = new HashMap<>();
-                    r.put("name", name);
-                    r.put("category", category);
-                    r.put("densityRange", densityRange);
-                    r.put("screwRange", screwRange);
-                    r.put("parallelStrength", parallelStrength);
-                    r.put("midDensity", midDensity);
-                    r.put("midDiameter", midDiameter);
-                    rows.add(r);
-                }
-            }
-            br.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        List<Map<String,Object>> scored = new ArrayList<>();
-        for (Map<String,Object> r : rows) {
-            Double midDens = (Double) r.get("midDensity");
-            Double midDia = (Double) r.get("midDiameter");
-            String rowCategory = (String) r.get("category");
-
-            double woodTypeSim = 0.5; // 기본값
-            if (rowCategory != null) {
-                if ("SOFTWOOD".equals(woodType) && rowCategory.contains("침")) woodTypeSim = 1.0;
-                else if ("HARDWOOD".equals(woodType) && rowCategory.contains("활")) woodTypeSim = 1.0;
-                else if ("CLT".equals(woodType) || "GLULAM".equals(woodType) || "GLT".equals(woodType)) woodTypeSim = 0.8;
-            }
-
-            double densityNorm = 1.0;
-            if (midDens != null) densityNorm = Math.min(1.0, Math.abs(density - midDens) / MAX_DENSITY_DIFF);
-
-            double diameterNorm = 1.0;
-            if (midDia != null) diameterNorm = Math.min(1.0, Math.abs(diameter - midDia) / MAX_DIAMETER_DIFF);
-
-            double distance = W_WOODTYPE * (1.0 - woodTypeSim) + W_DENSITY * densityNorm + W_DIAMETER * diameterNorm;
-            distance = Math.max(0.0, Math.min(1.0, distance));
-            double similarityPercent = Math.round((1.0 - distance) * 10000.0) / 100.0;
-
-            Map<String,Object> out = new HashMap<>(r);
-            out.put("similarity", similarityPercent);
-            scored.add(out);
-        }
-
-        List<Map<String,Object>> top = scored.stream()
-                .sorted(Comparator.comparingDouble((Map<String, Object> m) -> (Double) m.get("similarity")).reversed())
-                .limit(8)
-                .collect(Collectors.toList());
-
-        List<String> matchLabels = new ArrayList<>();
-        List<Double> matchValues = new ArrayList<>();
-        List<Map<String,Object>> matchDetails = new ArrayList<>();
-        for (Map<String,Object> t : top) {
-            String label = String.format("%s | %s | %s", safeObj(t.get("name")), safeObj(t.get("densityRange")), safeObj(t.get("screwRange")));
-            matchLabels.add(label);
-            matchValues.add((Double) t.get("similarity"));
-            Map<String,Object> d = new HashMap<>();
-            d.put("name", t.get("name"));
-            d.put("category", t.get("category"));
-            d.put("densityRange", t.get("densityRange"));
-            d.put("screwRange", t.get("screwRange"));
-            d.put("parallelStrength", t.get("parallelStrength"));
-            d.put("similarity", t.get("similarity"));
-            matchDetails.add(d);
-        }
-
-        model.addAttribute("matchLabels", matchLabels);
-        model.addAttribute("matchValues", matchValues);
-        model.addAttribute("matchDetails", matchDetails);
-
+        var comparison = literature.compare(readWoodData(), density, diameter, woodType, fastenerType);
+        var chartData = new LinkedHashMap<>(predictions.chartData(density, diameter, woodType, fastenerType));
+        chartData.put("measurements", literature.chartPoints(comparison));
+        model.addAttribute("chartData", chartData);
+        model.addAttribute("closeMatches", comparison.closeMatches());
+        model.addAttribute("referencePapers", comparison.references());
+        model.addAttribute("sameMaterialCount", comparison.sameMaterialCount());
+        model.addAttribute("densityTolerance", LiteratureComparisonService.DENSITY_TOLERANCE_PERCENT);
+        model.addAttribute("diameterTolerance", LiteratureComparisonService.DIAMETER_TOLERANCE_MM);
         return "calculator";
     }
 
+    private List<WoodEmbedmentDto> readWoodData() {
+        List<WoodEmbedmentDto> rows = new ArrayList<>();
+        ClassPathResource resource = new ClassPathResource("wood_data.csv");
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
+            br.readLine();
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.isBlank()) continue;
+                String[] tokens = line.split(",", -1);
+                if (tokens.length < 8) throw new IOException("Invalid wood data row");
+                rows.add(new WoodEmbedmentDto(safe(tokens,0), safe(tokens,1), safe(tokens,2), safe(tokens,3),
+                        safe(tokens,4), safe(tokens,5), safe(tokens,6), safe(tokens,7),
+                        safe(tokens,8), safe(tokens,9), safe(tokens,10), safe(tokens,12), safe(tokens,11)));
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException("목재 데이터를 읽을 수 없습니다.", e);
+        }
+        return rows;
+    }
+
     private static String safe(String[] tokens, int idx) {
-        if (tokens == null || idx < 0 || idx >= tokens.length) return "";
-        return tokens[idx] == null ? "" : tokens[idx].trim();
-    }
-    private static String safeObj(Object o) { return o==null ? "" : o.toString(); }
-
-    private Double parseDensityMidpoint(String s) {
-        if (s == null || s.isEmpty() || s.equals("-")) return null;
-        try {
-            if (s.contains("-")) {
-                String[] parts = s.split("-");
-                if (parts.length >= 2) {
-                    String a = parts[0].replaceAll("[^0-9\\.]", "").trim();
-                    String b = parts[1].replaceAll("[^0-9\\.]", "").trim();
-                    if (!a.isEmpty() && !b.isEmpty()) return (Double.parseDouble(a) + Double.parseDouble(b)) / 2.0;
-                }
-            }
-            String num = s.replaceAll("[^0-9\\.]", "");
-            if (!num.isEmpty()) return Double.parseDouble(num);
-        } catch (Exception ignored) {}
-        return null;
-    }
-
-    private Double parseDiameterMidpoint(String s) {
-        if (s == null || s.isEmpty() || s.equals("-")) return null;
-        try {
-            if (s.contains("-")) {
-                String[] parts = s.split("-");
-                if (parts.length >= 2) {
-                    String a = parts[0].replaceAll("[^0-9\\.]", "").trim();
-                    String b = parts[1].replaceAll("[^0-9\\.]", "").trim();
-                    if (!a.isEmpty() && !b.isEmpty()) return (Double.parseDouble(a) + Double.parseDouble(b)) / 2.0;
-                }
-            }
-            String num = s.replaceAll("[^0-9\\.]", "");
-            if (!num.isEmpty()) return Double.parseDouble(num);
-        } catch (Exception ignored) {}
-        return null;
+        return idx < tokens.length ? tokens[idx].trim() : "";
     }
 }

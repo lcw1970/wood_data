@@ -52,44 +52,58 @@
                 <div class="mb-3">
                     <label class="form-label fw-bold d-block mb-2">계산 목적 선택</label>
                     <div class="btn-group w-100" role="group" aria-label="계산 모드 선택">
-                        <input type="radio" class="btn-check" name="calcMode" id="modeStrength" value="STRENGTH" checked>
+                        <input type="radio" class="btn-check" name="calcMode" id="modeStrength" value="STRENGTH" th:checked="${inputCalcMode == null or inputCalcMode == 'STRENGTH'}">
                         <label class="btn btn-outline-primary py-2 fw-semibold" for="modeStrength">1.Embedment strength</label>
 
-                        <input type="radio" class="btn-check" name="calcMode" id="modeCompressive" value="COMPRESSIVE">
+                        <input type="radio" class="btn-check" name="calcMode" id="modeCompressive" value="COMPRESSIVE" th:checked="${inputCalcMode == 'COMPRESSIVE'}">
                         <label class="btn btn-outline-primary py-2 fw-semibold" for="modeCompressive">2.Compressive strength</label>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold d-block mb-2">파스너 종류</label>
+                    <div class="btn-group w-100" role="group" aria-label="파스너 종류">
+                        <input type="radio" class="btn-check" name="fastenerType" id="fastenerScrew" value="SCREW"
+                               th:checked="${inputFastenerType == null or inputFastenerType.name() == 'SCREW'}">
+                        <label class="btn btn-outline-primary py-2 fw-semibold" for="fastenerScrew">스크류</label>
+                        <input type="radio" class="btn-check" name="fastenerType" id="fastenerDowel" value="DOWEL"
+                               th:checked="${inputFastenerType != null and inputFastenerType.name() == 'DOWEL'}">
+                        <label class="btn btn-outline-primary py-2 fw-semibold" for="fastenerDowel">다월</label>
                     </div>
                 </div>
 
                 <div class="row g-3 mb-3">
                     <div class="col-12 col-md-4">
                         <label for="density" class="form-label fw-bold d-block mb-2">목재 밀도 (kg/m³)</label>
-                        <input type="number" step="0.1" id="density" name="density" class="form-control" placeholder="예: 560" required>
+                        <input type="number" step="0.1" id="density" name="density" class="form-control" placeholder="예: 560" min="0.1" th:value="${inputDensity}" required>
                     </div>
 
                     <div class="col-12 col-md-4">
                         <label for="diameter" class="form-label fw-bold d-block mb-2">파스너 직경 (mm)</label>
-                        <input type="number" step="0.1" id="diameter" name="diameter" class="form-control" placeholder="예: 12" required>
+                        <input type="number" step="0.1" id="diameter" name="diameter" class="form-control" placeholder="예: 12" min="0.1" max="30" th:value="${inputDiameter}" required>
                     </div>
 
                     <div class="col-12 col-md-4">
                         <label for="woodType" class="form-label fw-bold d-block mb-2">목재종류 (선택)</label>
                         <select id="woodType" name="woodType" class="form-select">
-                            <option value="SOFTWOOD">침엽수 (Softwood)</option>
-                            <option value="HARDWOOD">활엽수 (Hardwood)</option>
-                            <option value="GLT">GLT / 집성재 (Glulam)</option>
-                            <option value="CLT">CLT (직교적층재)</option>
+                            <option value="SOFTWOOD" th:selected="${inputWoodType == 'SOFTWOOD'}">침엽수 (Softwood)</option>
+                            <option value="HARDWOOD" th:selected="${inputWoodType == 'HARDWOOD'}">활엽수 (Hardwood)</option>
+                            <option value="GLT" th:selected="${inputWoodType == 'GLT'}">GLT / 집성재 (Glulam)</option>
+                            <option value="CLT" th:selected="${inputWoodType == 'CLT'}">CLT (직교적층재)</option>
                         </select>
                     </div>
 
                     <div class="col-12 col-md-12" id="thicknessCol" style="display:none;">
                         <label for="thickness" class="form-label fw-bold d-block mb-2">시편 두께 (mm)</label>
-                        <input type="number" step="0.1" id="thickness" name="thickness" class="form-control" placeholder="예: 40">
+                        <input type="number" step="0.1" id="thickness" name="thickness" class="form-control" placeholder="예: 40" min="0.1" th:value="${inputThickness}">
                     </div>
                 </div>
 
                 <button type="submit" id="submitBtn" class="btn btn-primary w-100 py-3 fw-bold">계산하기</button>
             </form>
         </div>
+
+        <div th:if="${inputError != null}" class="toss-card border border-danger" role="alert" th:text="${inputError}"></div>
 
         <!-- 결과 안내 상자 -->
         <div th:if="${result == null}" class="toss-card text-center py-4 bg-light border border-dashed">
@@ -101,85 +115,56 @@
              id="resultCard"
              class="toss-card border border-primary result-animated"
              th:data-density="${result['density']}"
-             th:data-diameter="${result['diameter']}"
-             th:data-fhavg0="${result['fhAvg_0']}"
-             th:data-fhavg90="${result['fhAvg_90']}">
+             th:data-diameter="${result['diameter']}">
 
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
                 <h3 class="fw-bold fs-5 mb-0 text-nowrap">계산 결과 및 예측</h3>
                 <div class="badge bg-primary-subtle text-primary border px-3 py-2 fs-6 text-wrap text-start">
                     입력: 밀도 <span th:text="${result['density']}"></span> kg/m³ |
                     직경 <span th:text="${result['diameter']}"></span> mm |
-                    종류: <span th:text="${result['woodType']}"></span>
+                    종류: <span th:text="${result['woodType']}"></span> |
+                    파스너: <span th:text="${result['fastenerLabel']}"></span>
                 </div>
             </div>
 
-            <!-- 1. 지압강도 수치 카드 -->
-            <h5 class="fs-6 fw-bold mb-2 text-secondary">1. 지압강도 (Embedment Strength, f_h)</h5>
-
-            <div class="p-3 mb-3 rounded-3 border bg-white">
-                <div class="fw-bold fs-6 mb-2 text-primary">① 섬유 평행방향 지압강도 (f_h,0, α = 0°)</div>
-                <div class="row g-2 text-center">
-                    <div class="col-6 col-md-3">
-                        <div class="p-2 rounded bg-light border h-100">
-                            <div class="text-muted small">Eurocode 5</div>
-                            <div class="fw-bold text-dark" th:text="${result['fhEc5_0'] + ' MPa'}"></div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="p-2 rounded bg-light border h-100">
-                            <div class="text-muted small">NDS (미국)</div>
-                            <div class="fw-bold text-dark" th:text="${result['fhNds_0'] + ' MPa'}"></div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="p-2 rounded bg-light border h-100">
-                            <div class="text-muted small">KDS 41 50</div>
-                            <div class="fw-bold text-dark" th:text="${result['fhKds_0'] + ' MPa'}"></div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="p-2 rounded bg-light border border-primary h-100">
-                            <div class="text-muted small">3개 기준 평균</div>
-                            <div class="fw-bold text-primary" th:text="${result['fhAvg_0'] + ' MPa'}"></div>
+            <h5 class="fs-6 fw-bold mb-2 text-secondary">1. 지압강도 참고 예측값</h5>
+            <p class="small text-muted mb-3">입력 밀도를 대입한 참고 계산이며 실험 평균값이나 설계강도를 뜻하지 않습니다.</p>
+            <p th:if="${result['fastenerType'] == 'SCREW'}" class="small text-muted mb-2">스크류는 입력 직경을 평활부 지름으로 보고 선공·횡하중을 가정합니다. KDS는 래그나사못 규정을 사용합니다. 상세 조건과 원문은 맨 아래 ‘참고식·원문 출처’에서 확인하세요.</p>
+            <p class="small text-muted">NDS/KDS는 G ≈ ρ/1000을 가정합니다. GLT·CLT는 침엽수 단일층으로 단순화합니다.</p>
+            <th:block>
+                <div class="p-3 mb-3 rounded-3 border bg-white">
+                    <div class="fw-bold fs-6 mb-2 text-primary">① 섬유 평행방향 (α = 0°)</div>
+                    <div class="row g-2 text-center">
+                        <div th:each="prediction : ${predictionModels}" class="col-12 col-sm-4">
+                            <div class="p-2 rounded bg-light border h-100">
+                                <div class="text-muted small" th:text="${prediction.label}"></div>
+                                <div class="fw-bold" th:text="${prediction.parallel + ' MPa'}"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="p-3 mb-4 rounded-3 border bg-white">
-                <div class="fw-bold fs-6 mb-2 text-success">② 섬유 직각방향 지압강도 (f_h,90, α = 90°)</div>
-                <div class="row g-2 text-center">
-                    <div class="col-6 col-md-3">
-                        <div class="p-2 rounded bg-light border h-100">
-                            <div class="text-muted small">Eurocode 5</div>
-                            <div class="fw-bold text-dark" th:text="${result['fhEc5_90'] + ' MPa'}"></div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="p-2 rounded bg-light border h-100">
-                            <div class="text-muted small">NDS (미국)</div>
-                            <div class="fw-bold text-dark" th:text="${result['fhNds_90'] + ' MPa'}"></div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="p-2 rounded bg-light border h-100">
-                            <div class="text-muted small">KDS 41 50</div>
-                            <div class="fw-bold text-dark" th:text="${result['fhKds_90'] + ' MPa'}"></div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="p-2 rounded bg-light border border-success h-100">
-                            <div class="text-muted small">3개 기준 평균</div>
-                            <div class="fw-bold text-success" th:text="${result['fhAvg_90'] + ' MPa'}"></div>
+                <div class="p-3 mb-4 rounded-3 border bg-white">
+                    <div class="fw-bold fs-6 mb-2 text-success">② 섬유 직각방향 (α = 90°)</div>
+                    <div class="row g-2 text-center">
+                        <div th:each="prediction : ${predictionModels}" class="col-12 col-sm-4">
+                            <div class="p-2 rounded bg-light border h-100">
+                                <div class="text-muted small" th:text="${prediction.label}"></div>
+                                <div class="fw-bold" th:text="${prediction.perpendicular + ' MPa'}"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </th:block>
+
+            <section th:if="${literaturePrediction != null}" id="screwLiteraturePrediction" class="p-3 mb-4 rounded-3 border bg-white">
+                <h5 class="fs-6 fw-bold mb-2" th:text="${literaturePrediction.label}"></h5>
+                <div class="fs-4 fw-bold text-primary" th:text="${literaturePrediction.parallel + ' MPa'}"></div>
+                <p class="small text-muted mb-0">Cabrera 외(2022) 문헌식 · 스크류 축과 섬유 각도 90° 가정 · 하중 평행·직각 공통. 위 세 기준과 별도로 계산한 예측값이며 논문 실측값은 아닙니다.</p>
+            </section>
 
             <!-- 2. 목재 압축강도 카드 -->
             <div id="compressiveSection" class="mb-4">
-                <h5 class="fs-6 fw-bold mb-2 text-secondary">2. 목재 압축강도 (Compressive Strength, f_c)</h5>
+                <h5 class="fs-6 fw-bold mb-2 text-secondary">2. 밀도 기반 목재 압축강도 참고값</h5>
                 <div class="row g-3">
                     <div class="col-6">
                         <div class="p-3 rounded-3 text-center bg-comp-0">
@@ -197,14 +182,20 @@
             </div>
 
             <!-- 그래프 영역 -->
-            <div class="p-3 mb-4 border rounded bg-white">
-                <h5 class="fs-6 fw-bold mb-1">기준별 예측값과 실험값 범주 비교 (밀도 ρ = <span th:text="${result['density']}"></span> kg/m³)</h5>
-                <p class="text-muted small mb-4">EC5, NDS, KDS 41 50 기준선 및 실제 실험값 평균·범위 (Mean ± SD Range, Error Bar) 대조</p>
+            <div id="predictionCharts" class="p-3 mb-4 border rounded bg-white">
+                <h5 class="fs-6 fw-bold mb-1">입력 밀도에서의 기준별 예측곡선 (밀도 ρ = <span th:text="${result['density']}"></span> kg/m³)</h5>
+                <p class="text-muted small mb-2">선은 입력 밀도를 고정한 예측이며 큰 원은 현재 입력 직경입니다. ◆는 밀도·직경이 근접한 논문 실측, △는 밀도가 다르거나 미기재인 논문 실측입니다. 논문 값은 해당 시험 직경·강도 그대로 표시합니다.</p>
+                <p class="text-muted small mb-3">실측 점을 가리키면 수종·밀도·출처가 나오고, 누르면 아래 논문 카드로 이동합니다. R(방사)·T(접선)는 각각 표시하며 미수록 값은 생략합니다.</p>
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <button type="button" id="chartScaleToggle" class="btn btn-outline-secondary btn-sm" aria-pressed="false">세로축 0부터 보기</button>
+                    <span id="chartScaleDescription" class="text-muted small" aria-live="polite">세로축 자동 확대 · 표시된 값 위아래에 여백을 둡니다.</span>
+                </div>
+                <p th:if="${#lists.isEmpty(closeMatches) and #lists.isEmpty(referencePapers)}" class="text-muted small">현재 조건에서 그래프에 표시할 논문 실측값이 없습니다.</p>
 
                 <div class="row g-4">
                     <div class="col-12">
                         <div class="p-3 border rounded bg-white shadow-sm">
-                            <h6 class="fw-bold text-center fs-6 mb-3 text-primary">(a) 섬유 평행방향 지압강도 (parallel to grain, α = 0°)</h6>
+                            <h6 class="fw-bold text-center fs-6 mb-3 text-primary">(a) 섬유 평행방향 (α = 0°)</h6>
                             <div class="chart-container">
                                 <canvas id="chartParallel"></canvas>
                             </div>
@@ -222,92 +213,72 @@
                 </div>
             </div>
 
-            <!-- 유사 데이터 수종 테이블 -->
-            <div th:if="${matchDetails != null and #lists.size(matchDetails) > 0}" class="p-3 border rounded bg-white mt-3">
-                <h5 class="fs-6 fw-bold mb-2">유사 DB 수종 세부 정보</h5>
-                <div class="table-responsive">
-                    <table class="table table-sm text-center align-middle mb-0">
-                        <thead class="table-light">
-                        <tr>
-                            <th>순위</th><th>수종</th><th>분류</th><th>밀도 범위</th><th>파스너</th><th>평행강도 (MPa)</th><th>유사도</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr th:each="d, stat : ${matchDetails}">
-                            <td th:text="${stat.count}">1</td>
-                            <td class="fw-semibold" th:text="${d.name}">Pinus ...</td>
-                            <td th:text="${d.category}">침엽수</td>
-                            <td th:text="${d.densityRange}">450 - 500</td>
-                            <td th:text="${d.screwRange}">6 - 12</td>
-                            <td th:text="${d.parallelStrength}">38.0 - 45.0</td>
-                            <td><span class="badge bg-primary-subtle text-primary border" th:text="${d.similarity + '%'}">85.0%</span></td>
-                        </tr>
-                        </tbody>
-                    </table>
+            <section id="literatureComparison" class="p-3 border rounded bg-white mt-3">
+                <div class="mb-3">
+                    <h5 class="fs-6 fw-bold mb-2">논문 실측값 · 별도 비교</h5>
+                    <p class="small text-muted mb-2">
+                        원문을 대조한 논문 중 같은 파스너 종류·목재 분류·제품 형태에서 밀도 차이
+                        <span th:text="${densityTolerance}"></span>% 이내, 직경 차이
+                        <span th:text="${diameterTolerance}"></span> mm 이내인 시험을 찾습니다.
+                        차이(%)는 입력 밀도를 기준으로 계산하며, 이 기준은 비교 후보를 찾기 위한 범위입니다.
+                    </p>
+                    <p class="small text-muted mb-0">논문 실측값은 해당 시험 조건의 결과이며 그래프에 별도 점으로 표시합니다. 입력 밀도로 환산하거나 실측 점을 예측선으로 연결하지 않습니다. 수종·함수율·파스너 종류와 평균/항복값의 정의도 함께 확인하세요.</p>
                 </div>
-            </div>
+
+                <h6 class="fw-bold">밀도·직경이 가까운 시험</h6>
+                <div th:if="${#lists.isEmpty(closeMatches)}" id="noCloseMatches" class="comparison-empty mb-3">
+                    현재 확인된 논문 데이터에 선택한 파스너 종류와 입력 밀도·직경이 가까운 시험이 없습니다.
+                    <span th:if="${sameMaterialCount == 0}">선택한 파스너·목재 분류·제품 형태의 원문 대조 데이터가 아직 없습니다.</span>
+                </div>
+                <div th:if="${!#lists.isEmpty(closeMatches)}" id="closeMatches" class="literature-grid mb-4">
+                    <th:block th:each="candidate : ${closeMatches}">
+                        <div th:replace="~{fragments/literature-card :: card(${candidate})}"></div>
+                    </th:block>
+                </div>
+
+                <div th:if="${!#lists.isEmpty(referencePapers)}" id="referencePapers" class="mt-4">
+                    <h6 class="fw-bold">조건이 다른 참고 논문</h6>
+                    <p class="small text-muted">같은 파스너 종류·목재 분류·제품 형태이며 직경은 가깝지만, 밀도가 다르거나 미기재인 시험입니다. 입력 조건의 실험값이나 예측 정확도를 입증하는 자료로 해석하지 마세요.</p>
+                    <div class="literature-grid">
+                        <th:block th:each="candidate : ${referencePapers}">
+                            <div th:replace="~{fragments/literature-card :: card(${candidate})}"></div>
+                        </th:block>
+                    </div>
+                </div>
+                <a th:href="@{/}" class="btn btn-outline-secondary btn-sm mt-3">전체 논문 데이터 보기 ↗</a>
+            </section>
 
         </div>
 
-        <!-- 산출 공식 안내 카드 -->
-        <div class="toss-card">
-            <h4 class="fw-bold mb-3 fs-6">지압강도 및 목재 압축강도 산출 공식</h4>
-            <div class="formula-box mb-3">
-                <div class="fw-bold text-primary mb-1">1. Eurocode 5 (유럽) 지압강도 공식</div>
-                <code class="d-block text-dark bg-white p-2 rounded border mb-2">f_h,EC5 = 0.082 × (1 - 0.01 × d) × ρ  (MPa)</code>
-                <small class="text-muted">* ρ: 목재 밀도 (kg/m³), d: 파스너 직경 (mm)</small>
+        <div th:if="${result != null}" id="formulaReferences" class="toss-card">
+            <h3 class="fs-5 fw-bold mb-3">참고식·원문 출처</h3>
+            <p class="small text-muted">단위: 강도 MPa, ρ kg/m³, d mm. 원문의 밀도·비중 정의를 추가 입력 없이 확정할 수 없어 ρ_k ≈ 입력 ρ, G ≈ ρ/1000으로 계산합니다. 결과는 이 가정에 따른 참고 예측값입니다.</p>
+            <p th:if="${result['fastenerType'] == 'SCREW'}" class="small text-muted">스크류 비교 조건: 축은 섬유에 직각, 횡하중, 선공, 나사산 외경 = 평활부 지름 = 입력 d, 평활부 관입 ≥ 4d, 나사산 지압 길이 ≤ 전체 지압 길이의 1/4을 가정합니다. KDS는 래그나사못의 못대 지름으로 봅니다. 실제 형상·시공을 확인한 값은 아니며 전나사 STS의 제품별 평가를 대체하지 않습니다. 따라서 6 mm 초과에서 다월과 같은 수치가 나올 수 있습니다.</p>
+            <div th:each="prediction : ${predictionModels}" class="formula-box mt-3">
+                <h4 class="fs-6 fw-bold mb-2" th:text="${prediction.label}"></h4>
+                <code class="d-block p-2 rounded border mb-2" style="white-space: normal" th:text="${prediction.formula}"></code>
+                <p class="small text-muted mb-2" th:text="${prediction.sourceNote}"></p>
+                <a th:href="${prediction.sourceUrl}" target="_blank" rel="noopener noreferrer" class="small d-block" style="overflow-wrap: anywhere">원문: <span th:text="${prediction.sourceUrl}"></span> ↗</a>
             </div>
-            <div class="formula-box formula-nds mb-3">
-                <div class="fw-bold text-danger mb-1">2. NDS 2018 (미국) 지압강도 공식</div>
-                <code class="d-block text-dark bg-white p-2 rounded border mb-2">
-                    f_h,0,NDS = 77.2 × G  (MPa)<br>
-                    f_h,90,NDS = 212 × G^1.45 × d^-0.5  (MPa)
-                </code>
-                <small class="text-muted">* G: 전건비중 (G = ρ / 1000)</small>
+            <div th:if="${literaturePrediction != null}" class="formula-box mt-3">
+                <h4 class="fs-6 fw-bold mb-2" th:text="${literaturePrediction.label}"></h4>
+                <code class="d-block p-2 rounded border mb-2" style="white-space: normal" th:text="${literaturePrediction.formula}"></code>
+                <p class="small text-muted mb-2" th:text="${literaturePrediction.sourceNote}"></p>
+                <a th:href="${literaturePrediction.sourceUrl}" target="_blank" rel="noopener noreferrer" class="small d-block" style="overflow-wrap: anywhere">논문 원문: <span th:text="${literaturePrediction.sourceUrl}"></span> ↗</a>
             </div>
-            <div class="formula-box formula-kds mb-3">
-                <div class="fw-bold text-success mb-1">3. KDS 41 50 (국내) 지압강도 공식</div>
-                <code class="d-block text-dark bg-white p-2 rounded border mb-2">
-                    f_h,0,KDS = 68.3 × G  (MPa)<br>
-                    f_h,90,KDS = 180 × G^1.45 × d^-0.5  (MPa)
-                </code>
-            </div>
-            <div class="formula-box formula-comp">
-                <div class="fw-bold formula-comp-title mb-1">4. 목재 압축강도 (f_c,0 & f_c,90) 추정식</div>
-                <code class="d-block text-dark bg-white p-2 rounded border mb-2">
-                    - 섬유 평행 압축강도: f_c,0 ≈ 0.05 × ρ  (MPa)<br>
-                    - 섬유 직각 압축강도: f_c,90 ≈ 0.005 × ρ  (MPa)
-                </code>
-            </div>
+            <p class="small mt-3 mb-2"><a href="https://standard.go.kr/KSCI/technologyIntro/getTechnologyDetailView.do?trgId=0000000026&amp;trgReformNo=0006" target="_blank" rel="noopener noreferrer">KDS 공식 배포 페이지 ↗</a> · 위 KDS 원문 링크는 HWPX 파일을 내려받습니다.</p>
+            <p class="small text-muted mb-2">위 판본의 식을 비교하며 최신판 적합성이나 제품별 설계강도를 확정하지 않습니다. 입력 가능 범위와 각 원문 규정의 적용 범위는 다릅니다.</p>
+            <p class="small text-muted mb-0">압축강도는 기존 밀도 비례 추정식(0.05ρ / 0.005ρ 및 목재종류 보정)을 사용합니다.</p>
         </div>
 
     </div>
 
-    <!-- 우측 LLM 채팅 패널 -->
-    <div class="llm-chat-panel">
-        <div class="chat-header">
-            <h3>💬 궁금한 점을 물어보세요</h3>
-        </div>
-        <div class="chat-notice">
-            소장 논문·KDS 설계기준·국가연구과제 보고서를 검색해 근거와 출처로 답합니다.
-        </div>
-
-        <div class="recommended-questions">
-            <button type="button" class="rec-btn">목재의 탄소저장 근거는?</button>
-            <button type="button" class="rec-btn">낙엽송의 지압강도는 얼마인가요?</button>
-            <button type="button" class="rec-btn">지압강도 실현, 어떻게 하는지 알려줄래?</button>
-        </div>
-
-        <div id="chat-messages" class="chat-messages"></div>
-
-        <div class="chat-input-area">
-            <textarea id="chat-input" placeholder="질문 입력 (Enter 전송)" rows="2"></textarea>
-            <button type="button" id="send-btn">전송</button>
-        </div>
-    </div>
 
 </div>
 
+<script th:inline="javascript">
+    window.woodChartData = /*[[${chartData}]]*/ null;
+</script>
 <!-- 라이브러리 및 JS 로드 -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script th:src="@{/js/calculator.js}"></script>

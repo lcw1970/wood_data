@@ -1,0 +1,38 @@
+[
+  {
+    "species": "낙엽송",
+    "reportedG": 0.51,
+    "nominalDiameterMm": 12,
+    "ndsParallelMpa": 39.372,
+    "ndsPerpendicularMpa": 23.0527,
+    "table5ParallelMpa": 30.66,
+    "table5RadialMpa": 12.4,
+    "table5TangentialMpa": 13.9,
+    "parallelRelativeDifferencePct": 28.415,
+    "comparisonStatus": "비중만 맞춘 민감도 계산; 스크류 형상·면적 기준은 미정합"
+  },
+  {
+    "species": "잣나무",
+    "reportedG": 0.45,
+    "nominalDiameterMm": 12,
+    "ndsParallelMpa": 34.74,
+    "ndsPerpendicularMpa": 19.2266,
+    "table5ParallelMpa": 26.3,
+    "table5RadialMpa": 11.5,
+    "table5TangentialMpa": 10.8,
+    "parallelRelativeDifferencePct": 32.091,
+    "comparisonStatus": "비중만 맞춘 민감도 계산; 스크류 형상·면적 기준은 미정합"
+  },
+  {
+    "species": "삼나무",
+    "reportedG": 0.36,
+    "nominalDiameterMm": 12,
+    "ndsParallelMpa": 27.792,
+    "ndsPerpendicularMpa": 13.9118,
+    "table5ParallelMpa": 24.1,
+    "table5RadialMpa": 9.6,
+    "table5TangentialMpa": 10.7,
+    "parallelRelativeDifferencePct": 15.32,
+    "comparisonStatus": "비중만 맞춘 민감도 계산; 스크류 형상·면적 기준은 미정합"
+  }
+]

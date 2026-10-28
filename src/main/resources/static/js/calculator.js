@@ -2,180 +2,139 @@
 let chartParallelInstance = null;
 let chartPerpendicularInstance = null;
 
-// 로딩 타이머 관리
-const loadingTimers = {};
-
 /* ============================================================
    테마별 차트 색상
    ============================================================ */
 function getChartTheme() {
     const dark = document.documentElement.getAttribute('data-theme') === 'dark';
     return {
-        dark: dark,
+        dark,
         text: dark ? '#e4e4e7' : '#333d4b',
-        grid: dark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)',
-        expLine: dark ? '#e4e4e7' : '#1e293b',
-        expFill: dark ? '#1f1f23' : '#ffffff'
+        grid: dark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)'
     };
 }
 
-/* ============================================================
-   차트 생성 (테마 변경 시 재호출하여 완전히 다시 그림)
-   ============================================================ */
-function buildCharts() {
-    const chartParallelEl = document.getElementById('chartParallel');
-    const chartPerpendicularEl = document.getElementById('chartPerpendicular');
-    if (!chartParallelEl || !chartPerpendicularEl || typeof Chart === 'undefined') return;
+// Predictions and paper measurements both come from the server; no strength formulas here.
+let chartFromZero = false;
 
-    // 기존 차트 제거
-    if (chartParallelInstance) { chartParallelInstance.destroy(); chartParallelInstance = null; }
+function strengthAxisBounds(datasets, fromZero) {
+    const values = datasets.flatMap(series => series.data.map(point => point.y)).filter(Number.isFinite);
+    if (!values.length) return {min: 0, max: 10};
+    const low = Math.min(...values), high = Math.max(...values);
+    const padding = Math.max((high - low) * 0.15, Math.abs(high) * 0.08, 2);
+    const bottom = fromZero ? 0 : Math.max(0, low - padding);
+    const top = high + padding;
+    const rough = (top - bottom) / 6;
+    const unit = 10 ** Math.floor(Math.log10(rough));
+    const step = [1, 2, 5, 10].find(factor => factor * unit >= rough) * unit;
+    return {min: Math.floor(bottom / step) * step, max: Math.ceil(top / step) * step};
+}
+
+function tooltipLines(text, width = 55) {
+    return (text || '').match(new RegExp(`.{1,${width}}(?:\\s|$)|.{1,${width}}`, 'g')) || [];
+}
+
+function buildCharts() {
+    const parallelCanvas = document.getElementById('chartParallel');
+    const perpendicularCanvas = document.getElementById('chartPerpendicular');
+    const data = window.woodChartData;
+    if (!parallelCanvas || !data || typeof Chart === 'undefined') return;
+    if (chartParallelInstance) chartParallelInstance.destroy();
     if (chartPerpendicularInstance) { chartPerpendicularInstance.destroy(); chartPerpendicularInstance = null; }
 
-    const resultCard = document.getElementById('resultCard');
-    const density = parseFloat(resultCard?.dataset.density) || 0;
-    const userDiameter = parseFloat(resultCard?.dataset.diameter) || 0;
-    const userFhAvg_0 = parseFloat(resultCard?.dataset.fhavg0) || 0;
-    const userFhAvg_90 = parseFloat(resultCard?.dataset.fhavg90) || 0;
-    const specGravity = density / 1000.0;
-
-    const t = getChartTheme();
-
-    // Chart.js 전역 기본값
-    Chart.defaults.color = t.text;
-    Chart.defaults.borderColor = t.grid;
+    const theme = getChartTheme();
+    Chart.defaults.color = theme.text;
+    Chart.defaults.borderColor = theme.grid;
     Chart.defaults.font.family = "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
-
-    const diameters = [6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
-
-    const ec5_0 = diameters.map(d => Math.round((0.082 * (1 - 0.01 * d) * density) * 100) / 100);
-    const nds_0 = diameters.map(d => Math.round((77.2 * specGravity) * 100) / 100);
-    const kds_0 = diameters.map(d => Math.round((68.3 * specGravity) * 100) / 100);
-
-    const ec5_90 = diameters.map(d => Math.round(((0.082 * (1 - 0.01 * d) * density) / (1.35 + 0.015 * d)) * 100) / 100);
-    const nds_90 = diameters.map(d => Math.round((212.0 * Math.pow(specGravity, 1.45) * Math.pow(d, -0.5)) * 100) / 100);
-    const kds_90 = diameters.map(d => Math.round((180.0 * Math.pow(specGravity, 1.45) * Math.pow(d, -0.5)) * 100) / 100);
-
-    const expMean_0 = [null, 46.8, null, 42.5, null, 40.3, null, 39.7, null, 36.9];
-    const expError_0 = [
-        null, { min: 41.5, max: 51.8 }, null, { min: 37.8, max: 47.2 },
-        null, { min: 35.9, max: 44.8 }, null, { min: 35.3, max: 44.1 },
-        null, { min: 32.8, max: 41.0 }
-    ];
-
-    const expMean_90 = [null, 32.8, null, 28.8, null, 27.8, null, 23.8, null, 22.7];
-    const expError_90 = [
-        null, { min: 28.2, max: 37.3 }, null, { min: 24.8, max: 32.9 },
-        null, { min: 24.0, max: 31.8 }, null, { min: 19.5, max: 25.8 }
-    ];
-
-    const userPoint_0 = diameters.map(d => d === userDiameter ? userFhAvg_0 : null);
-    const userPoint_90 = diameters.map(d => d === userDiameter ? userFhAvg_90 : null);
-
-    const errorBarPlugin = {
-        id: 'errorBarPlugin',
-        afterDatasetsDraw(chart) {
-            const ctx = chart.ctx;
-            const color = getChartTheme().expLine;
-            chart.data.datasets.forEach((dataset, datasetIndex) => {
-                if (dataset.errorBars) {
-                    const meta = chart.getDatasetMeta(datasetIndex);
-                    meta.data.forEach((element, index) => {
-                        const err = dataset.errorBars[index];
-                        if (err && element) {
-                            const x = element.x;
-                            const yMin = chart.scales.y.getPixelForValue(err.min);
-                            const yMax = chart.scales.y.getPixelForValue(err.max);
-
-                            ctx.save();
-                            ctx.beginPath();
-                            ctx.strokeStyle = color;
-                            ctx.lineWidth = 1.5;
-
-                            ctx.moveTo(x, yMin); ctx.lineTo(x, yMax);
-                            ctx.moveTo(x - 4, yMin); ctx.lineTo(x + 4, yMin);
-                            ctx.moveTo(x - 4, yMax); ctx.lineTo(x + 4, yMax);
-
-                            ctx.stroke();
-                            ctx.restore();
-                        }
-                    });
-                }
+    const config = (direction, yTitle) => {
+        const datasets = data.models.map((model, index) => ({
+            label: model.label,
+            data: model[direction],
+            borderColor: model.color,
+            backgroundColor: model.color,
+            borderWidth: 2,
+            borderDash: [[], [5, 5], [8, 3, 2, 3]][index] || [],
+            pointRadius: context => context.raw?.x === data.diameter ? 6 : 0,
+            pointHoverRadius: 7,
+            order: 1
+        }));
+        const measured = data.measurements?.[direction] || [];
+        for (const close of [true, false]) {
+            const points = measured.filter(point => point.close === close);
+            if (!points.length) continue;
+            const color = theme.dark ? '#fbbf24' : '#b45309';
+            datasets.push({
+                type: 'scatter',
+                label: close ? '논문 실측 · 근접 조건' : '논문 실측 · 다른/미상 밀도',
+                data: points,
+                showLine: false,
+                pointStyle: close ? 'rectRot' : 'triangle',
+                pointRadius: 7, pointHoverRadius: 10, pointHitRadius: 6,
+                borderColor: color, backgroundColor: close ? color : (theme.dark ? '#27272a' : '#ffffff'),
+                borderWidth: 2, order: 0
             });
         }
-    };
-
-    const makeOptions = function (yTitle, yMax) {
+        const xValues = datasets.flatMap(series => series.data.map(point => point.x)).filter(Number.isFinite);
         return {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            plugins: {
-                legend: {
-                    labels: { color: t.text, font: { size: 12 } }
+            type: 'line',
+            data: {datasets},
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                interaction: { mode: 'nearest', intersect: false },
+                layout: {padding: {top: 12, right: 14}},
+                onClick: (event, elements, chart) => {
+                    const point = elements.map(hit => chart.data.datasets[hit.datasetIndex].data[hit.index])
+                        .find(value => value.cardId);
+                    if (!point) return;
+                    const card = document.getElementById(point.cardId);
+                    if (card) {
+                        card.setAttribute('tabindex', '-1');
+                        card.focus({preventScroll: true});
+                        card.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    }
                 },
-                tooltip: {
-                    titleColor: t.dark ? '#f4f4f5' : '#ffffff',
-                    bodyColor: t.dark ? '#e4e4e7' : '#ffffff'
-                }
-            },
-            scales: {
-                x: {
-                    title: { display: true, text: '파스너 직경 d (mm)', color: t.text, font: { weight: 'bold' } },
-                    ticks: { color: t.text },
-                    grid: { color: t.grid },
-                    border: { color: t.grid }
+                onHover: (event, elements, chart) => {
+                    const paper = elements.some(hit => chart.data.datasets[hit.datasetIndex].data[hit.index].cardId);
+                    if (event.native?.target) event.native.target.style.cursor = paper ? 'pointer' : 'default';
                 },
-                y: {
-                    title: { display: true, text: yTitle, color: t.text, font: { weight: 'bold' } },
-                    ticks: { color: t.text },
-                    grid: { color: t.grid },
-                    border: { color: t.grid },
-                    min: 0,
-                    max: yMax
+                plugins: {
+                    legend: { labels: { color: theme.text, usePointStyle: true, boxWidth: 12, padding: 16, font: { size: 12 } } },
+                    tooltip: {callbacks: {
+                        title: items => items[0].raw.cardId ? items[0].raw.scientificName
+                            : `직경 ${items[0].parsed.x} mm · 입력 밀도 ${data.density} kg/m³`,
+                        label: item => item.raw.cardId
+                            ? `논문 실측 · ${item.raw.measurement}: ${item.parsed.y.toFixed(2)} MPa`
+                            : `${item.dataset.label}: ${item.parsed.y.toFixed(2)} MPa`,
+                        afterLabel: item => item.raw.cardId ? [
+                            `논문 직경 ${item.raw.x} mm · 논문 밀도 ${item.raw.density == null ? '미기재' : item.raw.density + ' kg/m³'}`,
+                            item.raw.conditionLabel, ...tooltipLines(item.raw.standard),
+                            ...tooltipLines(item.raw.sourceTitle), item.raw.sourceLocation,
+                            ...tooltipLines(item.raw.sourceUrl), '클릭하면 해당 논문 카드로 이동'
+                        ] : []
+                    }}
+                },
+                scales: {
+                    x: {
+                        type: 'linear', min: Math.min(6, data.diameter, ...xValues) - 0.4,
+                        max: Math.max(24, data.diameter, ...xValues) + 0.4,
+                        title: { display: true, text: '파스너 직경 d (mm)', color: theme.text },
+                        ticks: { color: theme.text }, grid: { color: theme.grid }, border: { color: theme.grid }
+                    },
+                    y: {
+                        ...strengthAxisBounds(datasets, chartFromZero),
+                        title: { display: true, text: yTitle, color: theme.text },
+                        ticks: { color: theme.text, maxTicksLimit: 8 }, grid: { color: theme.grid }, border: { color: theme.grid }
+                    }
                 }
             }
         };
     };
-
-    chartParallelInstance = new Chart(chartParallelEl.getContext('2d'), {
-        type: 'line',
-        data: {
-            labels: diameters.map(d => d + 'mm'),
-            datasets: [
-                { label: 'EC5 (EN 1995-1-1)', data: ec5_0, borderColor: '#1d4ed8', borderWidth: 2, pointRadius: 0 },
-                { label: 'NDS 2018', data: nds_0, borderColor: '#b91c1c', borderWidth: 2, borderDash: [5, 5], pointRadius: 0 },
-                { label: 'KDS 41 50', data: kds_0, borderColor: '#15803d', borderWidth: 2, borderDash: [8, 3, 2, 3], pointRadius: 0 },
-                {
-                    label: '실험값 (Mean ± SD)', data: expMean_0, errorBars: expError_0,
-                    borderColor: t.expLine, backgroundColor: t.expFill, pointStyle: 'circle',
-                    pointRadius: 5, pointBorderWidth: 2, showLine: false
-                },
-                { label: '현재 입력점', data: userPoint_0, borderColor: '#f97316', backgroundColor: '#f97316', pointRadius: 7, showLine: false }
-            ]
-        },
-        options: makeOptions('지압강도 f_h,0 (MPa)', 55),
-        plugins: [errorBarPlugin]
-    });
-
-    chartPerpendicularInstance = new Chart(chartPerpendicularEl.getContext('2d'), {
-        type: 'line',
-        data: {
-            labels: diameters.map(d => d + 'mm'),
-            datasets: [
-                { label: 'EC5 (EN 1995-1-1)', data: ec5_90, borderColor: '#1d4ed8', borderWidth: 2, pointRadius: 0 },
-                { label: 'NDS 2018', data: nds_90, borderColor: '#b91c1c', borderWidth: 2, borderDash: [5, 5], pointRadius: 0 },
-                { label: 'KDS 41 50', data: kds_90, borderColor: '#15803d', borderWidth: 2, borderDash: [8, 3, 2, 3], pointRadius: 0 },
-                {
-                    label: '실험값 (Mean ± SD)', data: expMean_90, errorBars: expError_90,
-                    borderColor: t.expLine, backgroundColor: t.expFill, pointStyle: 'circle',
-                    pointRadius: 5, pointBorderWidth: 2, showLine: false
-                },
-                { label: '현재 입력점', data: userPoint_90, borderColor: '#f97316', backgroundColor: '#f97316', pointRadius: 7, showLine: false }
-            ]
-        },
-        options: makeOptions('지압강도 f_h,90 (MPa)', 40),
-        plugins: [errorBarPlugin]
-    });
+    chartParallelInstance = new Chart(parallelCanvas.getContext('2d'), config('parallel', '평행방향 강도 (MPa)'));
+    if (!data.commonDirection && perpendicularCanvas) {
+        chartPerpendicularInstance = new Chart(perpendicularCanvas.getContext('2d'), config('perpendicular', '직각방향 강도 (MPa)'));
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -209,31 +168,17 @@ function initEventListeners() {
     const calcModeRadios = document.querySelectorAll('input[name="calcMode"]');
     calcModeRadios.forEach(radio => radio.addEventListener('change', toggleCalcMode));
 
-    const recBtns = document.querySelectorAll('.rec-btn');
-    recBtns.forEach(btn => {
-        btn.addEventListener('click', function () {
-            const inputEl = document.getElementById('chat-input');
-            if (inputEl) {
-                inputEl.value = this.innerText;
-                sendMessage();
-            }
-        });
+    const scaleToggle = document.getElementById('chartScaleToggle');
+    if (scaleToggle) scaleToggle.addEventListener('click', () => {
+        chartFromZero = !chartFromZero;
+        scaleToggle.setAttribute('aria-pressed', String(chartFromZero));
+        scaleToggle.textContent = chartFromZero ? '세로축 자동 확대' : '세로축 0부터 보기';
+        document.getElementById('chartScaleDescription').textContent = chartFromZero
+            ? '세로축 0부터 표시 · 위쪽 여백을 유지합니다.'
+            : '세로축 자동 확대 · 표시된 값 위아래에 여백을 둡니다.';
+        buildCharts();
     });
 
-    const chatInput = document.getElementById('chat-input');
-    if (chatInput) {
-        chatInput.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-    }
-
-    const sendBtn = document.getElementById('send-btn');
-    if (sendBtn) {
-        sendBtn.addEventListener('click', sendMessage);
-    }
 }
 
 function toggleCalcMode() {
@@ -254,144 +199,4 @@ function toggleCalcMode() {
         thicknessInput.value = '';
         submitBtn.textContent = '계산하기';
     }
-}
-
-async function sendMessage() {
-    const inputEl = document.getElementById('chat-input');
-    const sendBtn = document.getElementById('send-btn');
-    if (!inputEl) return;
-
-    const question = inputEl.value.trim();
-    if (!question) return;
-
-    const density = document.getElementById('density')?.value || '';
-    const diameter = document.getElementById('diameter')?.value || '';
-    const woodType = document.getElementById('woodType')?.value || '';
-
-    appendMessage('user', question);
-    inputEl.value = '';
-
-    inputEl.disabled = true;
-    if (sendBtn) sendBtn.disabled = true;
-
-    const startTime = performance.now();
-    const loadingId = appendLoading();
-
-    try {
-        const response = await fetch('/api/llm/ask', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                question: question,
-                context: `밀도: ${density}, 직경: ${diameter}, 수종: ${woodType}`
-            })
-        });
-
-        const rawText = await response.text();
-        const elapsed = Math.round((performance.now() - startTime) / 1000);
-        removeMessage(loadingId);
-
-        let answerText = '';
-        let sources = [];
-
-        try {
-            const data = JSON.parse(rawText);
-            answerText = data.answer || data.result || data.response || data.output || data.content || data.text || data.message || (typeof data === 'string' ? data : null);
-            if (data.sources && Array.isArray(data.sources)) {
-                sources = data.sources;
-            }
-        } catch (e) {
-            answerText = rawText;
-        }
-
-        if (answerText) {
-            if (sources.length > 0) {
-                answerText += '\n\n📌 출처:\n' + sources.map(s => `- ${s}`).join('\n');
-            }
-            appendMessage('ai', answerText, elapsed);
-        } else {
-            appendMessage('ai', '답변 내용을 표시할 수 없습니다.', elapsed);
-        }
-
-    } catch (err) {
-        const elapsed = Math.round((performance.now() - startTime) / 1000);
-        removeMessage(loadingId);
-        console.error('Fetch Error:', err);
-        appendMessage('ai', '서버 통신 중 에러가 발생했습니다.', elapsed);
-    } finally {
-        inputEl.disabled = false;
-        if (sendBtn) sendBtn.disabled = false;
-        inputEl.focus();
-    }
-}
-
-function appendMessage(sender, text, elapsedSec) {
-    const container = document.getElementById('chat-messages');
-    if (!container) return;
-
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `message ${sender}`;
-
-    const textSpan = document.createElement('span');
-    textSpan.innerText = text;
-    msgDiv.appendChild(textSpan);
-
-    if (sender === 'ai' && (elapsedSec || elapsedSec === 0)) {
-        const timeDiv = document.createElement('div');
-        timeDiv.className = 'msg-elapsed';
-        timeDiv.innerText = `⏱ ${elapsedSec}초 소요`;
-        msgDiv.appendChild(timeDiv);
-    }
-
-    container.appendChild(msgDiv);
-    container.scrollTop = container.scrollHeight;
-}
-
-function appendLoading() {
-    const container = document.getElementById('chat-messages');
-    if (!container) return null;
-
-    const id = 'loading-' + Date.now();
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = id;
-    loadingDiv.className = 'message ai loading-message';
-    loadingDiv.innerHTML = `
-        <div class="loading-spinner"></div>
-        <span class="loading-text">답변 생성 중...</span>
-        <span class="loading-timer" id="${id}-timer">0초</span>
-    `;
-    container.appendChild(loadingDiv);
-    container.scrollTop = container.scrollHeight;
-
-    // 1초 단위(정수)로 경과 시간 갱신
-    const started = performance.now();
-    loadingTimers[id] = setInterval(function () {
-        const timerEl = document.getElementById(id + '-timer');
-        if (!timerEl) {
-            clearInterval(loadingTimers[id]);
-            delete loadingTimers[id];
-            return;
-        }
-        const sec = Math.floor((performance.now() - started) / 1000);
-        timerEl.innerText = sec + '초';
-
-        if (sec >= 30) {
-            timerEl.classList.add('timer-slow');
-            timerEl.classList.remove('timer-warn');
-        } else if (sec >= 10) {
-            timerEl.classList.add('timer-warn');
-        }
-    }, 250);
-
-    return id;
-}
-
-function removeMessage(id) {
-    if (!id) return;
-    if (loadingTimers[id]) {
-        clearInterval(loadingTimers[id]);
-        delete loadingTimers[id];
-    }
-    const el = document.getElementById(id);
-    if (el) el.remove();
 }
