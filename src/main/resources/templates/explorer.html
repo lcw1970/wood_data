@@ -82,13 +82,29 @@
     <section class="toss-card" aria-labelledby="scatterHeading">
         <div class="explorer-chart-heading">
             <div><h2 id="scatterHeading" class="h5 fw-bold mb-2">직경–지압강도 산점도</h2><p id="activeDirection" class="text-muted small mb-0"></p></div>
+            <div id="allDirectionViews" class="btn-group btn-group-sm" role="group" aria-label="모든 방향 그래프 표시" hidden>
+                <button id="view3D" type="button" class="btn btn-outline-primary" aria-pressed="true">3D 방향별 보기</button>
+                <button id="view2D" type="button" class="btn btn-outline-primary" aria-pressed="false">2D 겹쳐 보기</button>
+            </div>
         </div>
         <p class="small text-muted mt-3 mb-0">● Full-hole &nbsp; △ Half-hole &nbsp; ◆ 미확인 · 색상은 수종</p>
         <p class="small text-muted mt-3">점 하나는 논문 표의 시험군 평균·평가값입니다. 개별 시편의 산포나 표본 수를 뜻하지 않습니다. 같은 좌표의 점은 겹칠 수 있습니다.</p>
         <p id="mixedBasisNotice" class="explorer-notice small">항복값과 최대값 또는 시험 형상이 다른 자료가 함께 표시될 수 있습니다. 위 필터로 같은 조건을 골라 비교하세요.</p>
         <section class="scatter-panel" aria-labelledby="selectedWoodHeading">
             <h3 id="selectedWoodHeading" class="h6 fw-bold"><span id="selectedWoodName">침엽수</span> <span id="selectedWoodCount" class="text-muted small"></span></h3>
-            <div class="scatter-canvas"><canvas id="woodScatter" role="img" aria-label="침엽수 직경별 지압강도 산점도"></canvas></div>
+            <div id="threeDControls" hidden>
+                <div class="explorer-3d-toolbar" role="group" aria-label="3D 시점 조작">
+                    <span class="small text-muted">드래그·방향키로 회전</span>
+                    <button type="button" id="rotateLeft" class="btn btn-outline-secondary btn-sm" aria-label="왼쪽으로 회전">↶</button>
+                    <button type="button" id="rotateRight" class="btn btn-outline-secondary btn-sm" aria-label="오른쪽으로 회전">↷</button>
+                    <button type="button" id="zoomIn" class="btn btn-outline-secondary btn-sm" aria-label="3D 그래프 확대">＋</button>
+                    <button type="button" id="zoomOut" class="btn btn-outline-secondary btn-sm" aria-label="3D 그래프 축소">−</button>
+                    <button type="button" id="reset3DView" class="btn btn-outline-secondary btn-sm">시점 초기화</button>
+                </div>
+                <ul id="directionLayers" class="explorer-direction-layers" aria-label="하중 방향별 강도값 개수"></ul>
+                <p id="threeDHelp" class="small text-muted">X: 직경(mm) · Y: 지압강도(MPa) · Z: 하중 방향. 직각 미구분은 R/T가 구분되지 않은 보고값이며, 층 간격은 수치적 크기를 뜻하지 않습니다.</p>
+            </div>
+            <div id="scatterCanvasContainer" class="scatter-canvas"><canvas id="woodScatter" role="img" aria-label="침엽수 직경별 지압강도 산점도"></canvas></div>
             <div id="woodLegend" class="explorer-legend" aria-label="침엽수 수종 범례"></div>
             <p id="woodEmpty" class="small text-muted empty-plot" hidden></p>
         </section>
@@ -113,6 +129,7 @@
 </main>
 <script th:inline="javascript">window.woodExplorerData = /*[[${explorerData}]]*/ null;</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script th:src="@{/js/explorer-3d.js}"></script>
 <script th:src="@{/js/explorer.js}"></script>
 <script th:src="@{/js/theme.js}"></script>
 </body>

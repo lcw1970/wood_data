@@ -13,6 +13,17 @@
 .explorer-stats strong { display:block; font-size:32px; margin:6px 0; }
 .scatter-panel { min-width:0; padding:18px; background:var(--bg-inner); border:1px solid var(--border-c); border-radius:12px; position:relative; }
 .scatter-canvas { position:relative; height:clamp(420px,60vh,680px); }
+.scatter-canvas.is-3d { height:clamp(520px,68vh,760px); }
+.scatter-canvas.is-3d canvas { display:block; width:100%; height:100%; cursor:grab; touch-action:none; }
+.scatter-canvas.is-3d canvas.is-dragging { cursor:grabbing; }
+.scatter-canvas.is-3d canvas:focus-visible { outline:2px solid #3182f6; outline-offset:2px; border-radius:8px; }
+.explorer-3d-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:12px 0; }
+.explorer-3d-toolbar > span { margin-right:auto; }
+.explorer-direction-layers { display:flex; flex-wrap:wrap; gap:8px; list-style:none; padding:0; margin:12px 0; }
+.explorer-direction-layers li { font-size:12px; border:1px solid var(--border-c); padding:5px 10px; border-radius:6px; color:var(--text-sub); }
+.explorer-3d-tooltip { position:absolute; z-index:2; pointer-events:none; max-width:min(300px,90%); padding:10px 12px; border:1px solid var(--border-c); border-radius:8px; background:var(--bg-card,#fff); color:var(--text-main,#222); font-size:12px; white-space:pre-line; box-shadow:0 4px 16px #0003; }
+#allDirectionViews[hidden], #threeDControls[hidden], .explorer-3d-tooltip[hidden] { display:none; }
+#allDirectionViews button[aria-pressed="true"] { color:#fff; background:#3182f6; border-color:#3182f6; }
 .explorer-legend { display:flex; flex-wrap:wrap; justify-content:center; gap:6px 14px; margin-top:12px; min-height:42px; align-content:start; }
 .explorer-legend span { font-size:11px; }
 .explorer-legend .legend-marker { font-size:16px; margin-right:4px; line-height:1; }

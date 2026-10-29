@@ -1,4 +1,5 @@
 const explorerCharts = [];
+let explorerAllDirectionsView = '3D', explorer3DView, explorer3DChart;
 const explorerFilterIds = ['directionFilter', 'fastenerFilter', 'setupFilter', 'basisFilter', 'productFilter', 'speciesFilter', 'woodGroupFilter'];
 const explorerDefaults = {direction: 'PARALLEL', fastener: 'ALL', setup: 'ALL', basis: 'ALL', product: 'ALL', species: 'ALL', woodGroup: 'SOFTWOOD'};
 const explorerPalette = ['#3182f6', '#e58a20', '#16a68a', '#9a67d7', '#e65e83', '#639d26', '#19a5c4', '#b57853'];
@@ -151,6 +152,7 @@ function renderExplorer() {
     if (!data) return;
     refreshSpeciesFilter(data.points, document.getElementById('woodGroupFilter').value);
     const filters = readExplorerFilters();
+    const use3D = filters.direction === 'ALL' && explorerAllDirectionsView === '3D';
     const points = selectExplorerPoints(data.points, filters);
     const group = filters.woodGroup;
     const groupLabel = group === 'SOFTWOOD' ? '침엽수' : '활엽수';
@@ -166,7 +168,14 @@ function renderExplorer() {
     document.getElementById('selectedWoodCount').textContent = `· ${points.length}개 값`;
     document.getElementById('woodEmpty').textContent = `현재 필터에 맞는 ${groupLabel} 데이터가 없습니다.`;
     document.getElementById('woodEmpty').hidden = points.length > 0;
-    document.getElementById('woodScatter').setAttribute('aria-label', `${groupLabel} 직경별 지압강도 산점도`);
+    document.getElementById('scatterHeading').textContent = use3D ? '직경–지압강도 3D 산점도' : '직경–지압강도 산점도';
+    document.getElementById('allDirectionViews').hidden = filters.direction !== 'ALL';
+    document.getElementById('threeDControls').hidden = !use3D;
+    document.getElementById('scatterCanvasContainer').classList.toggle('is-3d', use3D);
+    for (const mode of ['3D', '2D']) document.getElementById('view' + mode).setAttribute('aria-pressed', String(explorerAllDirectionsView === mode));
+    document.getElementById('woodScatter').setAttribute('aria-label', use3D
+        ? `${groupLabel} 하중 방향별 3D 지압강도 산점도. 드래그 또는 방향키로 회전, 더하기·빼기로 확대·축소, Home으로 시점 초기화.`
+        : `${groupLabel} 직경별 지압강도 산점도`);
     document.getElementById('woodLegend').setAttribute('aria-label', `${groupLabel} 수종 범례`);
     document.getElementById('strengthHistogram').setAttribute('aria-label', `${groupLabel} 강도값 구간별 개수`);
     renderExplorerTable(points);
@@ -174,10 +183,13 @@ function renderExplorer() {
     appendText(document.getElementById('pointDetails'), 'p', points.length ? '점을 누르거나 데이터 표의 ‘상세’를 선택하면 시험 조건과 원문이 표시됩니다.' : '현재 필터에 맞는 데이터가 없습니다.', 'small text-muted mb-0');
     document.getElementById('mixedBasisNotice').hidden = new Set(points.map(p => p.strengthBasis)).size <= 1 && new Set(points.map(p => p.testSetup)).size <= 1;
     for (const chart of explorerCharts) chart.destroy(); explorerCharts.length = 0;
-    if (typeof Chart === 'undefined') { document.getElementById('chartLoadError').hidden = false; return; }
+    explorer3DChart = null;
+    document.getElementById('chartLoadError').hidden = typeof Chart !== 'undefined';
     const dark = document.documentElement.getAttribute('data-theme') === 'dark';
     const text = dark ? '#e4e4e7' : '#4b5563', grid = dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.07)';
-    Chart.defaults.color = text; Chart.defaults.font.family = "'Pretendard', sans-serif";
+    if (typeof Chart !== 'undefined') {
+        Chart.defaults.color = text; Chart.defaults.font.family = "'Pretendard', sans-serif";
+    }
     const allSpecies = [...new Set(data.points.map(speciesName))].sort();
     const {xMax, yMax} = explorerAxisBounds(points);
     const sets = new Map();
@@ -199,7 +211,19 @@ function renderExplorer() {
         symbol.style.color = series.borderColor;
         appendText(item, 'span', series.label);
     }
-    explorerCharts.push(new Chart(document.getElementById('woodScatter'), {
+    if (use3D) {
+        const layers = document.getElementById('directionLayers'); layers.replaceChildren();
+        for (const layer of explorerDirectionLayers) {
+            appendText(layers, 'li', `${layer.label} · ${points.filter(p => p.direction === layer.direction).length}개`);
+        }
+        explorer3DView ??= {...explorerInitial3DView};
+        explorer3DChart = new Explorer3DChart(document.getElementById('woodScatter'), {
+            points, bounds: {xMax, yMax}, view: explorer3DView, dark,
+            colorFor: p => explorerPalette[allSpecies.indexOf(speciesName(p)) % explorerPalette.length],
+            labelFor: p => speciesLabel(speciesName(p)), onSelect: showExplorerDetails
+        });
+        explorerCharts.push(explorer3DChart);
+    } else if (typeof Chart !== 'undefined') explorerCharts.push(new Chart(document.getElementById('woodScatter'), {
         type: 'scatter', data: {datasets: [...sets.values()]}, options: {
             responsive: true, maintainAspectRatio: false, animation: false,
             interaction: {mode: 'point', intersect: true}, layout: {padding: {top: 8, right: 10}},
@@ -222,6 +246,7 @@ function renderExplorer() {
             }
         }
     }));
+    if (typeof Chart === 'undefined') return;
     const distribution = strengthDistribution(points);
     explorerCharts.push(new Chart(document.getElementById('strengthHistogram'), {
         type: 'bar', data: {labels: distribution.labels, datasets: [
@@ -237,7 +262,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = window.woodExplorerData;
     if (!data) return;
     for (const id of explorerFilterIds) document.getElementById(id).addEventListener('change', renderExplorer);
+    for (const mode of ['3D', '2D']) document.getElementById('view' + mode).addEventListener('click', () => {
+        explorerAllDirectionsView = mode; renderExplorer();
+    });
+    document.getElementById('rotateLeft').addEventListener('click', () => explorer3DChart?.rotate(-0.2));
+    document.getElementById('rotateRight').addEventListener('click', () => explorer3DChart?.rotate(0.2));
+    document.getElementById('zoomIn').addEventListener('click', () => explorer3DChart?.zoomBy(1.15));
+    document.getElementById('zoomOut').addEventListener('click', () => explorer3DChart?.zoomBy(1 / 1.15));
+    document.getElementById('reset3DView').addEventListener('click', () => explorer3DChart?.reset());
     document.getElementById('resetFilters').addEventListener('click', () => {
+        explorerAllDirectionsView = '3D'; explorer3DView = undefined;
         Object.values(explorerDefaults).forEach((value, i) => document.getElementById(explorerFilterIds[i]).value = value);
         renderExplorer();
     });
