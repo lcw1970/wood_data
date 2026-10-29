@@ -33,6 +33,13 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// Package the same reviewed CSV used by pandas; local updates are read on each request.
+tasks.named('processResources') {
+    from('exports') {
+        include 'literature_strength_long.csv'
+    }
+}
 jar {
     enabled = false
 }

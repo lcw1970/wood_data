@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
@@ -18,12 +17,12 @@ public class LiteratureComparisonService {
     // Retrieval tolerances only: these do not express statistical confidence or strength accuracy.
     public static final double DENSITY_TOLERANCE_PERCENT = 10.0;
     public static final double DIAMETER_TOLERANCE_MM = 1.0;
-    private static final Set<String> VERIFIED_SOURCES = Set.of("paper-9", "paper-30", "paper-34", "paper-72");
 
     public record Candidate(WoodEmbedmentDto wood, Double density, double diameter,
                             Double densityDifference, Double densityDifferencePercent,
                             double diameterDifference, boolean close, String conditionLabel) {
         public String cardId() {
+            if (wood.getTestGroupId() != null && !wood.getTestGroupId().isBlank()) return "trial-" + wood.getTestGroupId();
             return "paper-" + Integer.toUnsignedString(Objects.hash(wood.getSourceId(), wood.getScientificName(),
                     wood.getSourceLocation(), wood.getTestConditions(), wood.getDensityRange(), wood.getScrewRange()), 36);
         }
@@ -31,10 +30,25 @@ public class LiteratureComparisonService {
 
     public record MeasuredPoint(double x, double y, String scientificName, Double density, boolean close,
                                 String conditionLabel, String measurement, String standard, String sourceTitle,
-                                String sourceLocation, String sourceUrl, String cardId) { }
+                                String sourceLocation, String sourceUrl, String cardId, String sourceId,
+                                String category, String fastenerType, String testSetup, String testSetupLabel,
+                                String strengthBasis, String strengthBasisLabel, String testConditions, String direction) { }
 
     public record Comparison(List<Candidate> closeMatches, List<Candidate> references,
                              int sameMaterialCount) { }
+
+    public Map<String, Object> explorerData(List<WoodEmbedmentDto> rows) {
+        var trials = rows.stream().filter(this::hasVerifiedSource)
+                .filter(row -> scalar(row.getScrewRange()) != null)
+                .map(row -> new Candidate(row, scalar(row.getDensityRange()), scalar(row.getScrewRange()),
+                        null, null, 0, false, "논문 원문 실측값"))
+                .toList();
+        var values = chartPoints(new Comparison(trials, List.of(), trials.size()));
+        var points = Stream.concat(values.get("parallel").stream(), values.get("perpendicular").stream()).toList();
+        return Map.of("points", points, "trialCount", trials.size(), "pointCount", points.size(),
+                "sourceCount", trials.stream().map(c -> c.wood().getSourceId()).distinct().count(),
+                "excludedCount", rows.size() - trials.size());
+    }
 
     /** Plot only the trials also displayed as cards, at their original diameter and reported strength. */
     public Map<String, List<MeasuredPoint>> chartPoints(Comparison comparison) {
@@ -48,12 +62,12 @@ public class LiteratureComparisonService {
                 perpendicular.add(point(c, value, "섬유 직각"));
             } else {
                 // R/T are separately measured directions; never average them or parse ranges as points.
-                var matcher = Pattern.compile("^R\\s+([0-9]+(?:\\.[0-9]+)?);\\s*T\\s+([0-9]+(?:\\.[0-9]+)?)$")
+                var matcher = Pattern.compile("(?:^|;\\s*)(R|T)\\s+([0-9]+(?:\\.[0-9]+)?)(?=;|$)")
                         .matcher(c.wood().getPerpStrength().trim());
-                if (matcher.matches()) {
-                    Double radial = scalar(matcher.group(1)), tangential = scalar(matcher.group(2));
-                    if (radial != null) perpendicular.add(point(c, radial, "섬유 직각 · R(방사)"));
-                    if (tangential != null) perpendicular.add(point(c, tangential, "섬유 직각 · T(접선)"));
+                while (matcher.find()) {
+                    Double measured = scalar(matcher.group(2));
+                    if (measured != null) perpendicular.add(point(c, measured,
+                            matcher.group(1).equals("R") ? "섬유 직각 · R(방사)" : "섬유 직각 · T(접선)"));
                 }
             }
         });
@@ -64,7 +78,10 @@ public class LiteratureComparisonService {
         var wood = c.wood();
         return new MeasuredPoint(c.diameter(), value, wood.getScientificName(), c.density(), c.close(),
                 c.conditionLabel(), measurement, wood.getStandard(), wood.getSourceTitle(),
-                wood.getSourceLocation(), wood.getPaperUrl(), c.cardId());
+                wood.getSourceLocation(), wood.getPaperUrl(), c.cardId(), wood.getSourceId(), wood.getCategory(),
+                wood.getFastenerType(), wood.getTestSetup(), wood.getTestSetupLabel(), wood.getStrengthBasis(),
+                wood.getStrengthBasisLabel(), wood.getTestConditions(), measurement.contains("평행") ? "PARALLEL"
+                : measurement.contains("R(") ? "R" : measurement.contains("T(") ? "T" : "PERPENDICULAR");
     }
 
     public Comparison compare(List<WoodEmbedmentDto> rows, double density, double diameter, String woodType, FastenerType type) {
@@ -93,9 +110,9 @@ public class LiteratureComparisonService {
     }
 
     private boolean hasVerifiedSource(WoodEmbedmentDto row) {
-        return VERIFIED_SOURCES.contains(row.getSourceId())
+        return !row.getSourceId().isBlank()
                 && !row.getSourceTitle().isBlank() && !row.getSourceLocation().isBlank()
-                && !row.getTestConditions().isBlank() && row.getPaperUrl().startsWith("https://doi.org/");
+                && !row.getTestConditions().isBlank() && LiteratureDatasetService.validSourceUrl(row.getPaperUrl());
     }
 
     private boolean sameMaterial(String category, String woodType) {

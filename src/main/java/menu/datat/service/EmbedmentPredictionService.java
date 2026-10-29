@@ -77,10 +77,24 @@ public class EmbedmentPredictionService {
         for (int index = 0; index < selected.size(); index++) {
             List<Map<String, Double>> parallel = new ArrayList<>();
             List<Map<String, Double>> perpendicular = new ArrayList<>();
+            Double previous = null;
+            String modelId = selected.get(index).id();
             for (double d : diameters) {
+                if (previous != null) {
+                    double gap = (previous + d) / 2;
+                    if (modelId.equals("nds") && previous < 6.35 && d >= 6.35) {
+                        // Distinct equations meet here; do not draw a fictitious vertical connector.
+                        parallel.add(chartPoint(gap, null));
+                        perpendicular.add(chartPoint(gap, null));
+                    }
+                    if (modelId.equals("ec5") && type == FastenerType.SCREW && previous <= 6 && d > 6) {
+                        perpendicular.add(chartPoint(gap, null));
+                    }
+                }
                 Value value = predict(density, d, woodType, type).get(index);
                 parallel.add(Map.of("x", d, "y", value.parallel()));
                 perpendicular.add(Map.of("x", d, "y", value.perpendicular()));
+                previous = d;
             }
             curves.add(Map.of("label", selected.get(index).label(), "color", colors[index],
                     "parallel", parallel, "perpendicular", perpendicular));
@@ -90,6 +104,13 @@ public class EmbedmentPredictionService {
     }
 
     private double round(double value) { return Math.round(value * 100.0) / 100.0; }
+
+    private Map<String, Double> chartPoint(double diameter, Double strength) {
+        Map<String, Double> point = new LinkedHashMap<>();
+        point.put("x", diameter);
+        point.put("y", strength);
+        return point;
+    }
 
     private void validate(double density, double diameter) {
         if (!Double.isFinite(density) || density <= 0 || !Double.isFinite(diameter) || diameter <= 0 || diameter > 30) {

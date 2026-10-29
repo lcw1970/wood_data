@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function charts(commonDirection, diameter = 12.5, measurements = {}, peak = 31.27) {
+function charts(commonDirection, diameter = 12.5, measurements = {}, peak = 31.27, withGap = false) {
     const rendered = [];
     const server = {
         density: 560, diameter, commonDirection, measurements,
@@ -14,6 +14,7 @@ function charts(commonDirection, diameter = 12.5, measurements = {}, peak = 31.2
             perpendicular: [{x: 6, y: 21.11}, {x: diameter, y: 12.34 + i}, {x: 24, y: 8.12}]
         }))
     };
+    if (withGap) server.models[1].parallel.splice(1, 0, {x: 6.34995, y: null});
     function Chart(canvas, config) { rendered.push(config); this.destroy = () => {}; }
     Chart.defaults = {font: {}};
     const document = {
@@ -30,6 +31,21 @@ test('three standards render two directional charts for the server comparison pa
     assert.equal(charts(false).rendered.length, 2);
     assert.equal(charts(false).rendered[0].data.datasets.length, 3);
     assert.equal(charts(false).rendered[1].data.datasets.length, 3);
+});
+
+test('equation boundary gaps stay disconnected and are not treated as zero strength', () => {
+    const {rendered, server} = charts(false, 12, {}, 31.27, true);
+    const nds = rendered[0].data.datasets[1];
+    assert.equal(nds.data, server.models[1].parallel);
+    assert.equal(nds.data[1].y, null);
+    assert.equal(nds.spanGaps, false);
+    assert.ok(rendered[0].options.scales.y.min > 0);
+    for (const chart of rendered) {
+        assert.equal(chart.options.scales.x.min, 6);
+        assert.equal(chart.options.scales.x.max, 24);
+        assert.equal(chart.options.scales.x.ticks.stepSize, 2);
+        assert.ok(chart.data.datasets.every(series => series.clip === false));
+    }
 });
 
 test('browser uses server predictions verbatim without a second formula', () => {

@@ -66,6 +66,36 @@ class EmbedmentPredictionServiceTests {
 
     @Test
     @SuppressWarnings("unchecked")
+    void chartBreaksAtEquationBoundariesWithoutChangingSelectedPredictions() {
+        for (var type : List.of(SCREW, DOWEL)) {
+            for (double diameter : List.of(6d, 6.35, 12d)) {
+                var graph = service.chartData(400, diameter, "SOFTWOOD", type);
+                var models = (List<Map<String, Object>>) graph.get("models");
+                for (int index = 0; index < models.size(); index++) {
+                    for (String direction : List.of("parallel", "perpendicular")) {
+                        var points = (List<Map<String, Double>>) models.get(index).get(direction);
+                        long gaps = points.stream().filter(p -> p.get("y") == null).count();
+                        boolean expected = index == 1 || (index == 0 && type == SCREW && direction.equals("perpendicular"));
+                        assertEquals(expected ? 1L : 0L, gaps);
+                        var current = points.stream().filter(p -> p.get("x") == diameter).findFirst().orElseThrow();
+                        var card = service.predict(400, diameter, "SOFTWOOD", type).get(index);
+                        assertEquals(direction.equals("parallel") ? card.parallel() : card.perpendicular(), current.get("y"));
+                        if (index == 1) {
+                            for (int n = 1; n < points.size(); n++) {
+                                var before = points.get(n - 1);
+                                var after = points.get(n);
+                                assertFalse(before.get("y") != null && after.get("y") != null
+                                        && before.get("x") < 6.35 && after.get("x") >= 6.35);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void graphAndCardsUseExactlyTheSameNumbersIncludingDecimalDiameters() {
         for (var type : List.of(SCREW, DOWEL)) {
             var graph = service.chartData(560, 12.5, "SOFTWOOD", type);

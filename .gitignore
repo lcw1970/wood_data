@@ -35,3 +35,7 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Python data tools ###
+__pycache__/
+*.py[cod]

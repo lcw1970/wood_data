@@ -17,7 +17,7 @@ class LiteratureComparisonServiceTests {
     @Test
     @SuppressWarnings("unchecked")
     void realChartPointsKeepMissingDensityAndSeparateRadialTangentialMeasurements() {
-        var controller = new WoodController(service, new EmbedmentPredictionService());
+        var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("exports/literature_strength_long.csv"));
         var model = new ExtendedModelMap();
         controller.calculate(560, 12, null, "SOFTWOOD", "STRENGTH", FastenerType.SCREW, model);
         var chart = (Map<String, Object>) model.get("chartData");
@@ -34,10 +34,10 @@ class LiteratureComparisonServiceTests {
         controller.calculate(466, 12, null, "GLT", "STRENGTH", FastenerType.DOWEL, glulam);
         chart = (Map<String, Object>) glulam.get("chartData");
         points = (Map<String, List<LiteratureComparisonService.MeasuredPoint>>) chart.get("measurements");
-        assertEquals(3, points.get("parallel").size());
+        assertEquals(4, points.get("parallel").size());
         assertEquals(List.of(21.8), points.get("perpendicular").stream().map(LiteratureComparisonService.MeasuredPoint::y).toList());
-        assertTrue(points.get("parallel").stream().allMatch(p -> p.close() && p.density() == 466));
-        assertEquals(3, points.get("parallel").stream().map(LiteratureComparisonService.MeasuredPoint::cardId).distinct().count());
+        assertTrue(points.get("parallel").stream().allMatch(p -> p.close() && Math.abs(p.density() - 466) / 466 <= 0.1));
+        assertEquals(4, points.get("parallel").stream().map(LiteratureComparisonService.MeasuredPoint::cardId).distinct().count());
     }
 
     @Test
@@ -99,7 +99,7 @@ class LiteratureComparisonServiceTests {
     @Test
     @SuppressWarnings("unchecked")
     void realDatasetShowsNoFalse560SoftwoodMeasurementAndFinds466GlulamExperiments() {
-        var controller = new WoodController(service, new EmbedmentPredictionService());
+        var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("exports/literature_strength_long.csv"));
         var model = new ExtendedModelMap();
         controller.getWoodDataList(model);
         var rows = (List<WoodEmbedmentDto>) model.get("woodList");
@@ -108,8 +108,9 @@ class LiteratureComparisonServiceTests {
         assertFalse(softwood.references().isEmpty());
         assertTrue(softwood.references().stream().allMatch(c -> c.density() == null));
         var glulam = service.compare(rows, 466, 12, "GLT", FastenerType.DOWEL);
-        assertEquals(3, glulam.closeMatches().size());
-        assertTrue(glulam.closeMatches().stream().allMatch(c -> c.wood().getSourceId().equals("paper-30")));
+        assertEquals(4, glulam.closeMatches().size());
+        assertEquals(3, glulam.closeMatches().stream().filter(c -> c.wood().getSourceId().equals("paper-30")).count());
+        assertTrue(glulam.closeMatches().stream().anyMatch(c -> c.wood().getSourceId().equals("paper-146") && c.wood().getParallelStrength().equals("39.72")));
         assertTrue(glulam.closeMatches().stream().anyMatch(c -> c.wood().getParallelStrength().equals("35.9")
                 && c.wood().getPerpStrength().equals("21.8")));
         assertTrue(service.compare(rows, 466, 12, "CLT", FastenerType.DOWEL).closeMatches().isEmpty());
@@ -117,7 +118,7 @@ class LiteratureComparisonServiceTests {
 
     @Test
     void calculatorRetainsSubmittedConditionsAndRejectsNonFiniteOrOutOfDomainInputs() {
-        var controller = new WoodController(service, new EmbedmentPredictionService());
+        var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("exports/literature_strength_long.csv"));
         var valid = new ExtendedModelMap();
         assertEquals("calculator", controller.calculate(560, 12.5, null, "SOFTWOOD", "STRENGTH", FastenerType.SCREW, valid));
         assertEquals(560.0, valid.get("inputDensity"));
@@ -133,7 +134,7 @@ class LiteratureComparisonServiceTests {
     @Test
     @SuppressWarnings("unchecked")
     void screwAndDowelPapersNeverMix() {
-        var controller = new WoodController(service, new EmbedmentPredictionService());
+        var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("exports/literature_strength_long.csv"));
         var model = new ExtendedModelMap();
         controller.getWoodDataList(model);
         var rows = (List<WoodEmbedmentDto>) model.get("woodList");
@@ -143,7 +144,7 @@ class LiteratureComparisonServiceTests {
             assertTrue(result.references().stream().allMatch(c -> c.wood().getFastenerType().equals(type.name())));
         }
         assertTrue(service.compare(rows, 466, 12, "GLT", FastenerType.SCREW).closeMatches().isEmpty());
-        assertEquals(3, service.compare(rows, 466, 12, "GLT", FastenerType.DOWEL).closeMatches().size());
+        assertEquals(4, service.compare(rows, 466, 12, "GLT", FastenerType.DOWEL).closeMatches().size());
     }
 
 }

@@ -111,6 +111,7 @@
             <p class="toss-header-desc mb-0">학명 기준 목재 물성 데이터 및 원문 출처 서비스</p>
         </div>
         <div class="d-flex align-items-center gap-3 mt-2 mt-md-0">
+            <a th:href="@{/explorer}" class="btn btn-outline-primary btn-sm">논문 데이터 탐색 ↗</a>
             <a th:href="@{/calculator}" class="btn-toss-primary btn-mobile-full">
                 예측 계산기 바로가기 ↗
             </a>
@@ -181,6 +182,7 @@
                             <summary>출처·시험 조건</summary>
                             <div class="fw-semibold mt-1" th:text="${wood.sourceTitle}"></div>
                             <div class="text-muted" th:text="${wood.sourceLocation}"></div>
+                            <div class="mt-1" th:text="${wood.testSetupLabel + ' · ' + wood.strengthBasisLabel}"></div>
                             <div class="mt-1" th:text="${wood.testConditions}"></div>
                         </details>
                         <th:block th:if="${wood.paperUrl != null and wood.paperUrl != '' and wood.paperUrl != '-'}">

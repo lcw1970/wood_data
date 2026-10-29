@@ -3,20 +3,19 @@ package menu.datat.controller;
 import menu.datat.dto.WoodEmbedmentDto;
 import menu.datat.service.LiteratureComparisonService;
 import menu.datat.service.EmbedmentPredictionService;
+import menu.datat.service.LiteratureDatasetService;
 import menu.datat.service.EmbedmentPredictionService.FastenerType;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 
 @Controller
 public class WoodController {
@@ -24,10 +23,13 @@ public class WoodController {
     private final LiteratureComparisonService literature;
 
     private final EmbedmentPredictionService predictions;
+    private final LiteratureDatasetService dataset;
 
-    public WoodController(LiteratureComparisonService literature, EmbedmentPredictionService predictions) {
+    public WoodController(LiteratureComparisonService literature, EmbedmentPredictionService predictions,
+                          LiteratureDatasetService dataset) {
         this.literature = literature;
         this.predictions = predictions;
+        this.dataset = dataset;
     }
 
     @GetMapping("/")
@@ -41,6 +43,20 @@ public class WoodController {
     @GetMapping("/calculator")
     public String showCalculator() {
         return "calculator";
+    }
+
+    @GetMapping("/explorer")
+    public String exploreLiterature(Model model) {
+        model.addAttribute("explorerData", literature.explorerData(readWoodData()));
+        return "explorer";
+    }
+
+    @GetMapping(value = "/literature.csv", produces = "text/csv;charset=UTF-8")
+    @ResponseBody
+    public ResponseEntity<byte[]> downloadLiterature() throws IOException {
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"literature_strength_long.csv\"")
+                .header(HttpHeaders.CACHE_CONTROL, "no-store").body(dataset.download());
     }
 
     @PostMapping("/calculator")
@@ -107,26 +123,6 @@ public class WoodController {
     }
 
     private List<WoodEmbedmentDto> readWoodData() {
-        List<WoodEmbedmentDto> rows = new ArrayList<>();
-        ClassPathResource resource = new ClassPathResource("wood_data.csv");
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
-            br.readLine();
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (line.isBlank()) continue;
-                String[] tokens = line.split(",", -1);
-                if (tokens.length < 8) throw new IOException("Invalid wood data row");
-                rows.add(new WoodEmbedmentDto(safe(tokens,0), safe(tokens,1), safe(tokens,2), safe(tokens,3),
-                        safe(tokens,4), safe(tokens,5), safe(tokens,6), safe(tokens,7),
-                        safe(tokens,8), safe(tokens,9), safe(tokens,10), safe(tokens,12), safe(tokens,11)));
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException("목재 데이터를 읽을 수 없습니다.", e);
-        }
-        return rows;
-    }
-
-    private static String safe(String[] tokens, int idx) {
-        return idx < tokens.length ? tokens[idx].trim() : "";
+        return dataset.readAll();
     }
 }

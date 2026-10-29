@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>논문 지압강도 데이터 탐색</title>
+    <script>
+        (() => { const saved = localStorage.getItem('theme'); document.documentElement.setAttribute('data-theme', saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')); })();
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/calculator.css}">
+    <link rel="stylesheet" th:href="@{/css/theme.css}">
+    <link rel="stylesheet" th:href="@{/css/explorer.css}">
+</head>
+<body>
+<main class="explorer-page">
+    <header class="toss-card explorer-header">
+        <div>
+            <span class="explorer-kicker">LITERATURE DATA · 시험용</span>
+            <h1 class="h3 fw-bold mt-2 mb-2">논문 속 지압강도, 한눈에 보기</h1>
+            <p class="text-muted mb-0">직경에 따라 강도가 어떻게 분포하는지 침엽수와 활엽수를 나눠 살펴보세요.</p>
+        </div>
+        <nav class="d-flex flex-wrap align-items-center gap-2" aria-label="페이지 이동">
+            <a th:href="@{/literature.csv}" class="btn btn-outline-primary btn-sm">전체 논문 CSV 받기</a>
+            <a th:href="@{/calculator}" class="btn btn-outline-primary btn-sm">예측 계산기</a>
+            <a th:href="@{/}" class="btn btn-outline-secondary btn-sm">논문 데이터 목록</a>
+            <label class="theme-switch" for="theme-toggle-checkbox" aria-label="다크모드 전환">
+                <input type="checkbox" id="theme-toggle-checkbox">
+                <span class="theme-switch-track"><span class="theme-switch-thumb"></span></span>
+            </label>
+        </nav>
+    </header>
+
+    <section class="toss-card" aria-labelledby="filterHeading">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h2 id="filterHeading" class="h6 fw-bold mb-0">보고 싶은 시험 조건</h2>
+            <button type="button" id="resetFilters" class="btn btn-outline-secondary btn-sm">필터 초기화</button>
+        </div>
+        <div class="explorer-filters">
+            <div><label for="directionFilter" class="form-label">하중 방향</label><select id="directionFilter" class="form-select">
+                <option value="PARALLEL">섬유 평행</option><option value="PERP_ALL">섬유 직각 전체</option>
+                <option value="R">직각 · R(방사)</option><option value="T">직각 · T(접선)</option><option value="ALL">모든 방향</option>
+            </select></div>
+            <div><label for="fastenerFilter" class="form-label">파스너</label><select id="fastenerFilter" class="form-select">
+                <option value="ALL">전체</option><option value="SCREW">스크류</option><option value="DOWEL">다월·볼트 평활부</option>
+            </select></div>
+            <div><label for="setupFilter" class="form-label">시험 형상</label><select id="setupFilter" class="form-select">
+                <option value="ALL">Full-hole + Half-hole</option><option value="FULL_HOLE">Full-hole · 전공법</option>
+                <option value="HALF_HOLE">Half-hole · 반공법</option><option value="UNKNOWN">미확인</option>
+            </select></div>
+            <div><label for="basisFilter" class="form-label">강도 평가 방식</label><select id="basisFilter" class="form-select">
+                <option value="ALL">전체</option><option value="OFFSET_5_PERCENT">5% 오프셋 항복값</option>
+                <option value="EN383_MAX_5MM">EN 383 최대값</option><option value="UNKNOWN">미확인</option>
+            </select></div>
+            <div><label for="productFilter" class="form-label">목재 제품</label><select id="productFilter" class="form-select">
+                <option value="ALL">전체</option><option value="SOLID">원목</option><option value="GLT">GLT·집성재</option><option value="CLT">CLT</option>
+            </select></div>
+            <div><label for="sourceFilter" class="form-label">논문</label><select id="sourceFilter" class="form-select"><option value="ALL">전체 논문</option></select></div>
+        </div>
+        <p class="small text-muted mt-3 mb-0">원문 대조 <span th:text="${explorerData['sourceCount']}"></span>편 · <span th:text="${explorerData['trialCount']}"></span>개 시험 조건 · <span th:text="${explorerData['pointCount']}"></span>개 강도값.
+            기존 미대조 <span th:text="${explorerData['excludedCount']}"></span>개 항목은 제외했습니다. 검토한 CSV에 논문을 추가하면 새로고침할 때 반영됩니다.</p>
+    </section>
+
+    <section class="explorer-stats" aria-label="현재 표시한 데이터" aria-live="polite">
+        <div class="toss-card"><span>표시한 강도값</span><strong id="visiblePointCount">0</strong><small>평행·직각·R/T 구분</small></div>
+        <div class="toss-card"><span>시험 조건</span><strong id="visibleTrialCount">0</strong><small>동일 조건의 R/T는 1건</small></div>
+        <div class="toss-card"><span>논문</span><strong id="visibleSourceCount">0</strong><small>원문 출처 확인</small></div>
+        <div class="toss-card"><span>밀도 미기재 값</span><strong id="missingDensityCount">0</strong><small>비중으로 환산하지 않음</small></div>
+    </section>
+
+    <section class="toss-card" aria-labelledby="scatterHeading">
+        <div class="explorer-chart-heading">
+            <div><h2 id="scatterHeading" class="h5 fw-bold mb-2">직경–지압강도 산점도</h2><p id="activeDirection" class="text-muted small mb-0"></p></div>
+            <div class="small text-muted">● Full-hole &nbsp; △ Half-hole &nbsp; ◆ 미확인<br>색상은 수종 · 두 그래프는 같은 축 범위</div>
+        </div>
+        <p class="small text-muted mt-3">점 하나는 논문 표의 시험군 평균·평가값입니다. 개별 시편의 산포나 표본 수를 뜻하지 않습니다. 같은 좌표의 점은 겹칠 수 있습니다.</p>
+        <p id="mixedBasisNotice" class="explorer-notice small">항복값과 최대값 또는 시험 형상이 다른 자료가 함께 표시될 수 있습니다. 위 필터로 같은 조건을 골라 비교하세요.</p>
+        <div class="scatter-grid">
+            <section class="scatter-panel">
+                <h3 class="h6 fw-bold">침엽수 <span id="softwoodCount" class="text-muted small"></span></h3>
+                <div class="scatter-canvas"><canvas id="softwoodScatter" role="img" aria-label="침엽수 직경별 지압강도 산점도"></canvas></div>
+                <div id="softwoodLegend" class="explorer-legend" aria-label="침엽수 수종 범례"></div>
+                <p id="softwoodEmpty" class="small text-muted empty-plot" hidden>현재 필터에 맞는 침엽수 데이터가 없습니다.</p>
+            </section>
+            <section class="scatter-panel">
+                <h3 class="h6 fw-bold">활엽수 <span id="hardwoodCount" class="text-muted small"></span></h3>
+                <div class="scatter-canvas"><canvas id="hardwoodScatter" role="img" aria-label="활엽수 직경별 지압강도 산점도"></canvas></div>
+                <div id="hardwoodLegend" class="explorer-legend" aria-label="활엽수 수종 범례"></div>
+                <p id="hardwoodEmpty" class="small text-muted empty-plot" hidden>현재 필터에 맞는 활엽수 데이터가 없습니다.</p>
+            </section>
+        </div>
+        <div id="pointDetails" class="point-details mt-3" aria-live="polite"><p class="text-muted small mb-0">점에 마우스를 올려 값을 확인하거나, 점을 눌러 시험 조건과 논문 출처를 펼쳐 보세요. 아래 데이터 표에서도 선택할 수 있습니다.</p></div>
+    </section>
+
+    <section class="toss-card" aria-labelledby="distributionHeading">
+        <h2 id="distributionHeading" class="h5 fw-bold mb-2">강도값의 분포</h2>
+        <p class="text-muted small">현재 필터의 강도값을 10 MPa 구간으로 나눈 개수입니다. 논문 시험군 값의 분포이며 개별 시편의 확률분포는 아닙니다.</p>
+        <div class="histogram-canvas"><canvas id="strengthHistogram" role="img" aria-label="침엽수 활엽수 강도값 구간별 개수"></canvas></div>
+    </section>
+
+    <section class="toss-card">
+        <details><summary class="fw-bold">현재 표시한 원문 데이터 <span id="tablePointCount"></span></summary>
+            <div class="table-responsive mt-3"><table class="table align-middle small explorer-table">
+                <thead><tr><th>선택</th><th>수종·제품</th><th>방향</th><th>직경</th><th>강도</th><th>시험 형상·평가 방식</th><th>원문</th></tr></thead>
+                <tbody id="pointTableBody"></tbody>
+            </table></div>
+        </details>
+    </section>
+    <p id="chartLoadError" class="text-danger" hidden>그래프 라이브러리를 불러오지 못했습니다. 네트워크 연결 후 새로고침해 주세요. 데이터 표는 계속 사용할 수 있습니다.</p>
+</main>
+<script th:inline="javascript">window.woodExplorerData = /*[[${explorerData}]]*/ null;</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script th:src="@{/js/explorer.js}"></script>
+<script th:src="@{/js/theme.js}"></script>
+</body>
+</html>

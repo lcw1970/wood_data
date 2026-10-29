@@ -35,6 +35,7 @@
             </div>
             <div class="d-flex align-items-center gap-3">
                 <a th:href="@{/}" class="btn btn-outline-secondary btn-sm">← DB 목록으로</a>
+                <a th:href="@{/explorer}" class="btn btn-outline-primary btn-sm">논문 데이터 탐색 ↗</a>
                 <label class="theme-switch" for="theme-toggle-checkbox" aria-label="다크모드 전환">
                     <input type="checkbox" id="theme-toggle-checkbox">
                     <span class="theme-switch-track">
@@ -186,6 +187,8 @@
                 <h5 class="fs-6 fw-bold mb-1">입력 밀도에서의 기준별 예측곡선 (밀도 ρ = <span th:text="${result['density']}"></span> kg/m³)</h5>
                 <p class="text-muted small mb-2">선은 입력 밀도를 고정한 예측이며 큰 원은 현재 입력 직경입니다. ◆는 밀도·직경이 근접한 논문 실측, △는 밀도가 다르거나 미기재인 논문 실측입니다. 논문 값은 해당 시험 직경·강도 그대로 표시합니다.</p>
                 <p class="text-muted small mb-3">실측 점을 가리키면 수종·밀도·출처가 나오고, 누르면 아래 논문 카드로 이동합니다. R(방사)·T(접선)는 각각 표시하며 미수록 값은 생략합니다.</p>
+                <p class="text-muted small mb-3">적용식이 바뀌는 경계(EC5 스크류 6 mm, NDS 6.35 mm)는 선을 끊어 표시합니다. 경계 양쪽의 값이 다를 수 있습니다.</p>
+                <p class="text-muted small mb-3">시험 형상(Full-hole/Half-hole)과 강도 평가 방식은 실측 점의 설명과 논문 카드에 표시합니다. 형상이나 항복·최대값 정의가 다른 자료는 동일 조건의 검증값으로 보지 않습니다. <a th:href="@{/explorer}">전체 논문 산점도 보기 ↗</a></p>
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                     <button type="button" id="chartScaleToggle" class="btn btn-outline-secondary btn-sm" aria-pressed="false">세로축 0부터 보기</button>
                     <span id="chartScaleDescription" class="text-muted small" aria-live="polite">세로축 자동 확대 · 표시된 값 위아래에 여백을 둡니다.</span>

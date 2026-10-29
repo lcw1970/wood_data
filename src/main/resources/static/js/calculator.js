@@ -53,6 +53,8 @@ function buildCharts() {
             borderColor: model.color,
             backgroundColor: model.color,
             borderWidth: 2,
+            spanGaps: false,
+            clip: false,
             borderDash: [[], [5, 5], [8, 3, 2, 3]][index] || [],
             pointRadius: context => context.raw?.x === data.diameter ? 6 : 0,
             pointHoverRadius: 7,
@@ -71,7 +73,7 @@ function buildCharts() {
                 pointStyle: close ? 'rectRot' : 'triangle',
                 pointRadius: 7, pointHoverRadius: 10, pointHitRadius: 6,
                 borderColor: color, backgroundColor: close ? color : (theme.dark ? '#27272a' : '#ffffff'),
-                borderWidth: 2, order: 0
+                borderWidth: 2, order: 0, clip: false
             });
         }
         const xValues = datasets.flatMap(series => series.data.map(point => point.x)).filter(Number.isFinite);
@@ -110,17 +112,18 @@ function buildCharts() {
                         afterLabel: item => item.raw.cardId ? [
                             `논문 직경 ${item.raw.x} mm · 논문 밀도 ${item.raw.density == null ? '미기재' : item.raw.density + ' kg/m³'}`,
                             item.raw.conditionLabel, ...tooltipLines(item.raw.standard),
+                            item.raw.testSetupLabel, ...tooltipLines(item.raw.strengthBasisLabel),
                             ...tooltipLines(item.raw.sourceTitle), item.raw.sourceLocation,
                             ...tooltipLines(item.raw.sourceUrl), '클릭하면 해당 논문 카드로 이동'
-                        ] : []
+                        ].filter(Boolean) : []
                     }}
                 },
                 scales: {
                     x: {
-                        type: 'linear', min: Math.min(6, data.diameter, ...xValues) - 0.4,
-                        max: Math.max(24, data.diameter, ...xValues) + 0.4,
+                        type: 'linear', min: Math.floor(Math.min(6, data.diameter, ...xValues) / 2) * 2,
+                        max: Math.ceil(Math.max(24, data.diameter, ...xValues) / 2) * 2,
                         title: { display: true, text: '파스너 직경 d (mm)', color: theme.text },
-                        ticks: { color: theme.text }, grid: { color: theme.grid }, border: { color: theme.grid }
+                        ticks: { color: theme.text, stepSize: 2, maxTicksLimit: 10 }, grid: { color: theme.grid }, border: { color: theme.grid }
                     },
                     y: {
                         ...strengthAxisBounds(datasets, chartFromZero),
