@@ -1,6 +1,6 @@
 # 논문 지압강도 DataFrame 구조
 
-한 행은 **한 논문의 한 시험 조건에서, 한 하중 방향과 한 강도 정의에 대해 보고한 강도값**이다. 현재 파일은 시험군 평균값 87행이며 개별 시편의 원자료와 분리한다. 새 논문은 같은 컬럼에 행을 추가한다.
+한 행은 **한 논문의 한 시험 조건에서, 한 하중 방향과 한 강도 정의에 대해 보고한 강도값**이다. 현재 파일은 시험군 평균값 228행이며 개별 시편의 원자료와 분리한다. 새 논문은 같은 컬럼에 행을 추가한다.
 
 ## 먼저 볼 핵심 열
 
@@ -28,7 +28,7 @@ CSV에는 결측 구분과 원문 추적을 위한 보조 열도 포함한다. �
 
 - density_kg_m3에 비중×1000을 채우지 않는다. 비중은 specific_gravity에 별도 기록한다.
 - 공칭 직경과 유효직경을 덮어쓰지 않는다. diameter_basis와 effective_diameter_mm를 함께 보존한다.
-- 기존 4편의 n_specimens와 strength_sd_mpa는 미전사이므로 비워 두고 NOT_EXTRACTED로 표시한다. 추가한 paper-146의 시편 수는 Table 1과 대조해 REPORTED로 기록했다. NOT_EXTRACTED는 원문에 보고되지 않았다는 판정이 아니다.
+- 기존 4편의 n_specimens와 strength_sd_mpa는 미전사이므로 비워 두고 NOT_EXTRACTED로 표시한다. paper-146과 2026-10-29 추가분의 시편 수는 원문과 대조해 REPORTED로 기록했다. 새 141개 행 중 SD가 직접 보고된 23개 행도 전사했다. NOT_EXTRACTED는 원문에 보고되지 않았다는 판정이 아니다.
 - 숫자 0, 미기재(NOT_REPORTED), 아직 미전사(NOT_EXTRACTED), 정의 미확인(UNKNOWN)을 구분한다. 결측값은 0으로 바꾸지 않는다.
 - 평균, 5% 특성값, 최대하중 기반값, 오프셋 항복값을 구분한다. 최대하중 기반 시험값도 여러 시편의 평균을 보고할 수 있으므로 value_statistic과 strength_basis는 서로 다른 열이다.
 - 논문에 개별 시편 값이 있으면 specimen_id를 둔 별도 원자료 테이블로 관리한다. 시험군 평균과 개별 시편을 한 회귀 입력으로 섞지 않는다.
@@ -78,7 +78,7 @@ if not duplicates.empty:
 
 ## 사이트 연동과 추가 절차
 
-`exports/literature_strength_long.csv`가 pandas와 사이트의 공통 원본이다. 사이트는 매 요청마다 같은 CSV를 읽는다. `/explorer`는 전체 분포를, 계산기는 입력 조건에 가까운 논문 시험군을 표시한다. `/literature.csv`에서 원본을 내려받을 수 있다. 현재 5편·45개 시험 조건·87개 평균값이다.
+`exports/literature_strength_long.csv`가 pandas와 사이트의 공통 원본이다. 사이트는 매 요청마다 같은 CSV를 읽는다. `/explorer`는 전체 분포를, 계산기는 입력 조건에 가까운 논문 시험군을 표시한다. `/literature.csv`에서 원본을 내려받을 수 있다. 현재 17편·186개 시험군 ID·228개 평균값이다. 2026-10-29 추가 기록은 `literature_expansion_20261029.md`에 정리했다.
 
 검토한 새 논문의 DOI·표 위치·로컬 PDF 해시는 `docs/paper_sources.json`에 기록한다. 추가 데이터는 같은 34개 열의 CSV로 준비하고 아래 명령을 실행한다. 중복 ID나 잘못된 값은 기존 마스터를 변경하기 전에 거부한다.
 
@@ -109,7 +109,7 @@ python3 scripts/manage_literature.py --append /path/to/reviewed_paper.csv
 | effective_diameter_mm | Float64 | 조건에 명시된 유효직경만 전사. 미확인은 빈칸 |
 | density_kg_m3 | Float64 | 논문이 보고한 밀도. 비중에서 환산하지 않음 |
 | density_status | string | REPORTED / NOT_REPORTED / NOT_STRUCTURED |
-| density_basis | string | 현재 AS_REPORTED. 함수율·질량/체적 기준은 원문 확인 후 구분 |
+| density_basis | string | AS_REPORTED. 조정 밀도/기준기후/재료 전체 평균의 범위는 test_notes에 기록 |
 | specific_gravity | Float64 | 조건에 보고된 G만 전사. density/1000 추정값을 넣지 않음 |
 | moisture_content_pct | Float64 | 기존 시험 조건에 수치로 명시된 함수율만 전사 |
 | thickness_mm | Float64 | 기존 시험 조건에 수치로 명시된 시편 두께만 전사 |
@@ -119,10 +119,10 @@ python3 scripts/manage_literature.py --append /path/to/reviewed_paper.csv
 | observation_level | string | 현재 GROUP_SUMMARY. 개별 시편 원자료와 별도로 관리 |
 | value_statistic | string | 현재 MEAN. 향후 개별값·특성값은 별도 종류/행으로 구분 |
 | strength_mpa | Float64 | 보고된 지압강도 숫자. 단위 문자열이나 범위를 넣지 않음 |
-| strength_sd_mpa | Float64 | 원문 표준편차. 현재 미전사이며 임의 생성하지 않음 |
+| strength_sd_mpa | Float64 | 원문 표준편차. 원문 SD가 확인된 행은 전사하고 미전사는 빈칸. CV에서 임의 생성하지 않음 |
 | n_specimens | Int64 | 이 방향·이 강도 통계값에 대응하는 시편 수. 확인한 값만 기록 |
 | n_status | string | REPORTED / NOT_EXTRACTED / NOT_REPORTED |
-| sd_status | string | 현재 NOT_EXTRACTED. 표준편차 0이라는 뜻과 구분 |
+| sd_status | string | REPORTED / NOT_EXTRACTED / NOT_REPORTED. 빈칸을 표준편차 0으로 해석하지 않음 |
 | source_title | string | 논문 제목 |
 | source_locator | string | 원문 표 번호·시험군·페이지 |
 | source_url | string | 논문 DOI/원문 주소 |

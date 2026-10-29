@@ -131,6 +131,7 @@ public class LiteratureDatasetService {
                     row.get("fastener_type"), row.get("test_notes"), row.get("test_setup"), row.get("strength_basis"));
             dto.setTestGroupId(row.get("study_id") + "/" + row.get("test_group_id") + "/" + row.get("strength_basis"));
             dto.setSpecificGravity(row.get("specific_gravity").isBlank() ? null : Double.valueOf(row.get("specific_gravity")));
+            dto.setSpeciesScientific(row.get("species_scientific"));
             result.add(dto);
         }
         return List.copyOf(result);

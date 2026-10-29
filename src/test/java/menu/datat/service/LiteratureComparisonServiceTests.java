@@ -60,7 +60,7 @@ class LiteratureComparisonServiceTests {
     @Test
     @SuppressWarnings("unchecked")
     void calculatorSetupChangesMeasurementsButNeverPredictions() {
-        var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("exports/literature_strength_long.csv"));
+        var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("src/test/resources/literature_baseline_87.csv"));
         Map<String, Object> baseline = null;
         for (var setup : TestSetupFilter.values()) {
             var model = new ExtendedModelMap();
@@ -91,7 +91,7 @@ class LiteratureComparisonServiceTests {
     @Test
     @SuppressWarnings("unchecked")
     void realChartPointsKeepMissingDensityAndSeparateRadialTangentialMeasurements() {
-        var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("exports/literature_strength_long.csv"));
+        var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("src/test/resources/literature_baseline_87.csv"));
         var model = new ExtendedModelMap();
         controller.calculate(560, 12, null, "SOFTWOOD", "STRENGTH", FastenerType.SCREW, TestSetupFilter.ALL, model);
         var chart = (Map<String, Object>) model.get("chartData");
@@ -173,7 +173,7 @@ class LiteratureComparisonServiceTests {
     @Test
     @SuppressWarnings("unchecked")
     void realDatasetShowsNoFalse560SoftwoodMeasurementAndFinds466GlulamExperiments() {
-        var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("exports/literature_strength_long.csv"));
+        var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("src/test/resources/literature_baseline_87.csv"));
         var model = new ExtendedModelMap();
         controller.getWoodDataList(model);
         var rows = (List<WoodEmbedmentDto>) model.get("woodList");
@@ -192,7 +192,7 @@ class LiteratureComparisonServiceTests {
 
     @Test
     void calculatorRetainsSubmittedConditionsAndRejectsNonFiniteOrOutOfDomainInputs() {
-        var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("exports/literature_strength_long.csv"));
+        var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("src/test/resources/literature_baseline_87.csv"));
         var valid = new ExtendedModelMap();
         assertEquals("calculator", controller.calculate(560, 12.5, null, "SOFTWOOD", "STRENGTH", FastenerType.SCREW, TestSetupFilter.ALL, valid));
         assertEquals(560.0, valid.get("inputDensity"));
@@ -208,7 +208,7 @@ class LiteratureComparisonServiceTests {
     @Test
     @SuppressWarnings("unchecked")
     void screwAndDowelPapersNeverMix() {
-        var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("exports/literature_strength_long.csv"));
+        var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("src/test/resources/literature_baseline_87.csv"));
         var model = new ExtendedModelMap();
         controller.getWoodDataList(model);
         var rows = (List<WoodEmbedmentDto>) model.get("woodList");

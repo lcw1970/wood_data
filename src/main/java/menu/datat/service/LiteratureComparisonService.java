@@ -42,7 +42,7 @@ public class LiteratureComparisonService {
                                 String sourceLocation, String sourceUrl, String cardId, String sourceId,
                                 String category, String fastenerType, String testSetup, String testSetupLabel,
                                 String strengthBasis, String strengthBasisLabel, String testConditions, String direction,
-                                Double specificGravity) { }
+                                Double specificGravity, String speciesScientific) { }
 
     public record Comparison(List<Candidate> closeMatches, List<Candidate> references,
                              int sameMaterialCount) { }
@@ -92,7 +92,7 @@ public class LiteratureComparisonService {
                 wood.getFastenerType(), wood.getTestSetup(), wood.getTestSetupLabel(), wood.getStrengthBasis(),
                 wood.getStrengthBasisLabel(), wood.getTestConditions(), measurement.contains("평행") ? "PARALLEL"
                 : measurement.contains("R(") ? "R" : measurement.contains("T(") ? "T" : "PERPENDICULAR",
-                wood.getSpecificGravity());
+                wood.getSpecificGravity(), wood.getSpeciesScientific());
     }
 
     public Comparison compare(List<WoodEmbedmentDto> rows, double density, double diameter, String woodType, FastenerType type) {

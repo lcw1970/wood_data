@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class WoodEmbedmentDto {
-    private String scientificName;   // 학명
+    private String scientificName;   // 원문 시험군 표시명 (학명·시험군 조건)
     private String category;         // 분류 (침엽수/활엽수)
     private String densityRange;     // 밀도 범위 (kg/m³)
     private String screwRange;       // 스크류/파스너 범위 (mm)
@@ -23,6 +23,17 @@ public class WoodEmbedmentDto {
     private String strengthBasis;    // EN383_MAX_5MM / OFFSET_5_PERCENT / UNKNOWN
     private String testGroupId;
     private Double specificGravity; // 원문 보고 비중. 밀도로 환산하지 않음.
+    private String speciesScientific; // CSV 수종 식별값. 시험군 표시명과 구분.
+
+    public WoodEmbedmentDto(String scientificName, String category, String densityRange, String screwRange,
+                            String parallelStrength, String perpStrength, String standard, String paperUrl,
+                            String sourceId, String sourceTitle, String sourceLocation, String fastenerType,
+                            String testConditions, String testSetup, String strengthBasis, String testGroupId,
+                            Double specificGravity) {
+        this(scientificName, category, densityRange, screwRange, parallelStrength, perpStrength, standard, paperUrl,
+                sourceId, sourceTitle, sourceLocation, fastenerType, testConditions, testSetup, strengthBasis,
+                testGroupId, specificGravity, null);
+    }
 
     public WoodEmbedmentDto(String scientificName, String category, String densityRange, String screwRange,
                             String parallelStrength, String perpStrength, String standard, String paperUrl,

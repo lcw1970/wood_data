@@ -3,11 +3,11 @@
 수종별 지압강도 조회, 시험 조건 검색, 지압강도·압축강도 예측 계산과 출처를 확인한 논문 실측값 별도 비교를 제공하는 Spring Boot 웹앱이다.
 
 - Java 21 / Gradle / Spring Boot / Thymeleaf / Chart.js
-- 논문 마스터: `exports/literature_strength_long.csv` (소장 논문 5편·45개 시험 조건·87개 보고값). `src/main/resources/wood_data.csv`의 기존 미대조 25개 항목은 목록에 별도 보존한다.
-- 출처 및 값의 정의: [논문 데이터 추가 기록](docs/data_import.md), [원문 목록](docs/paper_sources.json)
+- 논문 마스터: `exports/literature_strength_long.csv` (소장 논문 17편·186개 시험군 ID·228개 보고값). `src/main/resources/wood_data.csv`의 기존 미대조 25개 항목은 목록에 별도 보존한다.
+- 출처 및 값의 정의: [논문 데이터 추가 기록](docs/data_import.md), [원문 목록](docs/paper_sources.json), [2026-10-29 추가 검토](docs/literature_expansion_20261029.md)
 - 스크류/다월만 선택하며 추가 형상 입력은 받지 않는다. 스크류·다월 모두 EC5/NDS/KDS 기준별 예측값을 표시한다. 스크류는 평활부·선공 가정을 명시하고 문헌식 예측값을 별도로 표시하며, 화면 아래에 원문 링크와 조항을 제공한다. [단순화한 계산 모델](docs/simplified_fastener_model.md)을 참조한다.
 - 예측 그래프와 논문 실측값을 분리한다. 같은 파스너 종류·목재 분류·제품 형태에서 밀도 차이 10% 이내·직경 차이 1 mm 이내인 후보를 찾고 실제 시험 조건·출처를 표시한다. 밀도 미기재 항목은 별도 참고 자료로 구분한다.
-- `/explorer`에서 원문 대조한 45개 조건·87개 강도값을 침엽수/활엽수 산점도와 히스토그램으로 탐색한다. 하중 방향, 파스너, Full-hole/Half-hole, 강도 평가 방식, 제품, 논문 필터를 제공한다. 개별 시편이 아닌 논문 시험군 평균의 분포다. `/literature.csv`에서 같은 원본을 내려받는다.
+- `/explorer`에서 원문 대조한 186개 시험군·228개 강도값을 산점도와 히스토그램으로 탐색한다. 상단에서 침엽수/활엽수를 먼저 고른 뒤 학명(한글명)으로 수종을 선택한다. 하중 방향, 파스너, Full-hole/Half-hole, 강도 평가 방식, 제품 필터도 제공한다. 개별 시편이 아닌 논문 시험군 평균의 분포다. `/literature.csv`에서 같은 원본을 내려받는다.
 - AI 채팅 화면, 클라이언트 통신 코드, 프록시 컨트롤러 및 서버 연결 설정은 제거했다. 별도 AI 서버 없이 사용한다.
 
 ## 실행

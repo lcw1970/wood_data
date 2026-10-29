@@ -1,7 +1,29 @@
 const explorerCharts = [];
-const explorerFilterIds = ['directionFilter', 'fastenerFilter', 'setupFilter', 'basisFilter', 'productFilter', 'sourceFilter'];
-const explorerDefaults = {direction: 'PARALLEL', fastener: 'ALL', setup: 'ALL', basis: 'ALL', product: 'ALL', source: 'ALL'};
+const explorerFilterIds = ['directionFilter', 'fastenerFilter', 'setupFilter', 'basisFilter', 'productFilter', 'speciesFilter', 'woodGroupFilter'];
+const explorerDefaults = {direction: 'PARALLEL', fastener: 'ALL', setup: 'ALL', basis: 'ALL', product: 'ALL', species: 'ALL', woodGroup: 'SOFTWOOD'};
 const explorerPalette = ['#3182f6', '#e58a20', '#16a68a', '#9a67d7', '#e65e83', '#639d26', '#19a5c4', '#b57853'];
+// Display names only; filtering uses the original species_scientific CSV value.
+const explorerSpeciesNames = new Map([
+    ['Betula spp.', '자작나무속·종 미상'],
+    ['Chamaecyparis obtusa', '편백'],
+    ['Cryptomeria japonica', '삼나무'],
+    ['Eucalyptus saligna', '유칼립투스 살리그나'],
+    ['Fagus sylvatica', '유럽너도밤나무'],
+    ['Larix kaempferi', '낙엽송'],
+    ['Picea abies', '독일가문비'],
+    ['Picea spp.', '가문비나무속·종 미상'],
+    ['Picea spp.; Pinus spp.; Abies spp. (SPF)', 'SPF 혼합 수종군'],
+    ['Pinus caribaea x Pinus elliottii', '카리브소나무 × 슬래시소나무 교잡종'],
+    ['Pinus elliottii', '슬래시소나무'],
+    ['Pinus koraiensis', '잣나무'],
+    ['Pinus radiata', '라디아타소나무'],
+    ['Pinus sylvestris', '구주소나무'],
+    ['Pinus sylvestris var. mongolica', '백두산소나무'],
+    ['Pinus taeda', '테다소나무'],
+    ['Populus x euroamericana', '이태리포플러'],
+    ['Pseudotsuga menziesii', '더글러스퍼'],
+    ['Quercus spp.', '참나무속·종 미상']
+]);
 
 function woodGroup(point) {
     return point.category.includes('침엽수') ? 'SOFTWOOD' : point.category.includes('활엽수') ? 'HARDWOOD' : 'UNKNOWN';
@@ -11,12 +33,13 @@ function productForm(point) {
 }
 function selectExplorerPoints(points, filters) {
     return points.filter(p =>
+        (!filters.woodGroup || woodGroup(p) === filters.woodGroup) &&
         (filters.direction === 'ALL' || (filters.direction === 'PERP_ALL' ? p.direction !== 'PARALLEL' : p.direction === filters.direction)) &&
         (filters.fastener === 'ALL' || p.fastenerType === filters.fastener) &&
         (filters.setup === 'ALL' || p.testSetup === filters.setup) &&
         (filters.basis === 'ALL' || p.strengthBasis === filters.basis) &&
         (filters.product === 'ALL' || productForm(p) === filters.product) &&
-        (filters.source === 'ALL' || p.sourceId === filters.source));
+        (!filters.species || filters.species === 'ALL' || speciesName(p) === filters.species));
 }
 function strengthDistribution(points) {
     const count = Math.max(1, Math.floor(Math.max(0, ...points.map(p => p.y)) / 10) + 1);
@@ -41,7 +64,28 @@ function explorerAxisBounds(points) {
         yMax: Math.max(10, Math.ceil(maxStrength * 1.12 / 10) * 10)
     };
 }
-function speciesName(point) { return point.scientificName.replace(/\s*\(.+$/, ''); }
+function speciesName(point) { return point.speciesScientific || point.scientificName.replace(/\s*\(.+$/, ''); }
+function speciesLabel(name) {
+    const scientific = name === 'Picea spp.; Pinus spp.; Abies spp. (SPF)'
+        ? 'Picea spp. / Pinus spp. / Abies spp.' : name.replace(/ x /g, ' × ');
+    return `${scientific}(${explorerSpeciesNames.get(name) || '한글명 미등록'})`;
+}
+function explorerSpeciesOptions(points, group) {
+    return [...new Set(points.filter(p => woodGroup(p) === group).map(speciesName))]
+        .sort((a, b) => a.localeCompare(b, 'en'))
+        .map(value => ({value, label: speciesLabel(value)}));
+}
+function refreshSpeciesFilter(points, group) {
+    const select = document.getElementById('speciesFilter'), previous = select.value;
+    const options = explorerSpeciesOptions(points, group);
+    select.replaceChildren();
+    const all = appendText(select, 'option', '전체 수종'); all.value = 'ALL';
+    for (const {value, label} of options) {
+        const option = appendText(select, 'option', label); option.value = value;
+    }
+    select.value = options.some(option => option.value === previous) ? previous : 'ALL';
+    select.title = select.options[select.selectedIndex].text;
+}
 function explorerWrap(text, width = 48) { return String(text || '').match(new RegExp(`.{1,${width}}`, 'g')) || []; }
 function explorerMaterialLabel(point) {
     const density = point.density == null ? '밀도 미기재' : `밀도 ${point.density} kg/m³`;
@@ -68,7 +112,8 @@ function showExplorerDetails(points) {
     target.replaceChildren();
     for (const p of points) {
         const article = document.createElement('article'); target.appendChild(article);
-        appendText(article, 'h4', p.scientificName);
+        appendText(article, 'h4', speciesLabel(speciesName(p)));
+        appendText(article, 'p', `원문 시험군: ${p.scientificName}`, 'text-muted');
         appendText(article, 'p', `${p.category} · ${p.fastenerType === 'SCREW' ? '스크류' : '다월·볼트 평활부'} · ${p.measurement}`);
         appendText(article, 'p', `직경 ${p.x} mm · 강도 ${p.y} MPa`, 'fw-bold');
         appendText(article, 'p', explorerMaterialLabel(p), 'fw-bold');
@@ -93,7 +138,8 @@ function renderExplorerTable(points) {
         button.addEventListener('click', () => {
             showExplorerDetails([p]); document.getElementById('pointDetails').scrollIntoView({behavior: 'smooth', block: 'center'});
         });
-        appendText(row, 'td', `${p.scientificName} · ${p.category}`);
+        const species = appendText(row, 'td', speciesLabel(speciesName(p)));
+        appendText(species, 'div', `${p.scientificName} · ${p.category}`, 'small text-muted');
         appendText(row, 'td', p.measurement); appendText(row, 'td', `${p.x} mm`); appendText(row, 'td', `${p.y} MPa`);
         appendText(row, 'td', explorerMaterialLabel(p));
         appendText(row, 'td', `${p.testSetupLabel} · ${p.strengthBasisLabel}`);
@@ -103,14 +149,26 @@ function renderExplorerTable(points) {
 function renderExplorer() {
     const data = window.woodExplorerData;
     if (!data) return;
-    const points = selectExplorerPoints(data.points, readExplorerFilters());
+    refreshSpeciesFilter(data.points, document.getElementById('woodGroupFilter').value);
+    const filters = readExplorerFilters();
+    const points = selectExplorerPoints(data.points, filters);
+    const group = filters.woodGroup;
+    const groupLabel = group === 'SOFTWOOD' ? '침엽수' : '활엽수';
     const stats = explorerStats(points);
     for (const [id, value] of Object.entries({visiblePointCount: stats.points, visibleTrialCount: stats.trials,
         visibleSourceCount: stats.sources, missingDensityCount: stats.missingDensity, tablePointCount: `(${stats.points}개)`})) {
         document.getElementById(id).textContent = value;
     }
     const direction = document.getElementById('directionFilter');
-    document.getElementById('activeDirection').textContent = `현재: ${direction.options[direction.selectedIndex].text} · 직경 mm / 강도 MPa · 시험군 값`;
+    const selectedSpecies = filters.species === 'ALL' ? groupLabel : speciesLabel(filters.species);
+    document.getElementById('activeDirection').textContent = `현재: ${selectedSpecies} · ${direction.options[direction.selectedIndex].text} · 직경 mm / 강도 MPa · 시험군 값`;
+    document.getElementById('selectedWoodName').textContent = groupLabel;
+    document.getElementById('selectedWoodCount').textContent = `· ${points.length}개 값`;
+    document.getElementById('woodEmpty').textContent = `현재 필터에 맞는 ${groupLabel} 데이터가 없습니다.`;
+    document.getElementById('woodEmpty').hidden = points.length > 0;
+    document.getElementById('woodScatter').setAttribute('aria-label', `${groupLabel} 직경별 지압강도 산점도`);
+    document.getElementById('woodLegend').setAttribute('aria-label', `${groupLabel} 수종 범례`);
+    document.getElementById('strengthHistogram').setAttribute('aria-label', `${groupLabel} 강도값 구간별 개수`);
     renderExplorerTable(points);
     document.getElementById('pointDetails').replaceChildren();
     appendText(document.getElementById('pointDetails'), 'p', points.length ? '점을 누르거나 데이터 표의 ‘상세’를 선택하면 시험 조건과 원문이 표시됩니다.' : '현재 필터에 맞는 데이터가 없습니다.', 'small text-muted mb-0');
@@ -122,58 +180,53 @@ function renderExplorer() {
     Chart.defaults.color = text; Chart.defaults.font.family = "'Pretendard', sans-serif";
     const allSpecies = [...new Set(data.points.map(speciesName))].sort();
     const {xMax, yMax} = explorerAxisBounds(points);
-    for (const [group, prefix] of [['SOFTWOOD', 'softwood'], ['HARDWOOD', 'hardwood']]) {
-        const subset = points.filter(p => woodGroup(p) === group);
-        document.getElementById(prefix + 'Count').textContent = `· ${subset.length}개 값`;
-        document.getElementById(prefix + 'Empty').hidden = subset.length > 0;
-        const sets = new Map();
-        for (const p of subset) {
-            const name = speciesName(p), key = name + '|' + p.testSetup;
-            if (!sets.has(key)) {
-                const color = explorerPalette[allSpecies.indexOf(name) % explorerPalette.length];
-                sets.set(key, {label: `${name} · ${p.testSetup === 'FULL_HOLE' ? 'FH' : p.testSetup === 'HALF_HOLE' ? 'HH' : '?'}`,
-                    data: [], showLine: false, pointRadius: 6, pointHoverRadius: 9, pointHitRadius: 3,
-                    pointStyle: p.testSetup === 'FULL_HOLE' ? 'circle' : p.testSetup === 'HALF_HOLE' ? 'triangle' : 'rectRot',
-                    borderColor: color, backgroundColor: color + '88', borderWidth: 1.5, clip: false});
-            }
-            sets.get(key).data.push(p);
+    const sets = new Map();
+    for (const p of points) {
+        const name = speciesName(p), key = name + '|' + p.testSetup;
+        if (!sets.has(key)) {
+            const color = explorerPalette[allSpecies.indexOf(name) % explorerPalette.length];
+            sets.set(key, {label: `${speciesLabel(name)} · ${p.testSetup === 'FULL_HOLE' ? 'FH' : p.testSetup === 'HALF_HOLE' ? 'HH' : '?'}`,
+                data: [], showLine: false, pointRadius: 6, pointHoverRadius: 9, pointHitRadius: 3,
+                pointStyle: p.testSetup === 'FULL_HOLE' ? 'circle' : p.testSetup === 'HALF_HOLE' ? 'triangle' : 'rectRot',
+                borderColor: color, backgroundColor: color + '88', borderWidth: 1.5, clip: false});
         }
-        const legend = document.getElementById(prefix + 'Legend'); legend.replaceChildren();
-        for (const series of sets.values()) {
-            const item = document.createElement('span'); legend.appendChild(item);
-            const symbol = appendText(item, 'span', series.pointStyle === 'circle' ? '●' : series.pointStyle === 'triangle' ? '△' : '◆', 'legend-marker');
-            symbol.style.color = series.borderColor;
-            appendText(item, 'span', series.label);
-        }
-        explorerCharts.push(new Chart(document.getElementById(prefix + 'Scatter'), {
-            type: 'scatter', data: {datasets: [...sets.values()]}, options: {
-                responsive: true, maintainAspectRatio: false, animation: false,
-                interaction: {mode: 'point', intersect: true}, layout: {padding: {top: 8, right: 10}},
-                onClick: (event, hits, chart) => {
-                    if (hits.length) showExplorerDetails(hits.map(hit => chart.data.datasets[hit.datasetIndex].data[hit.index]));
-                },
-                plugins: {
-                    legend: {display: false},
-                    tooltip: {callbacks: {
-                        title: items => items[0].raw.scientificName,
-                        label: item => `${item.raw.measurement}: ${item.raw.y} MPa · ${item.raw.x} mm`,
-                        afterLabel: item => [item.raw.testSetupLabel, ...explorerWrap(item.raw.strengthBasisLabel),
-                            explorerMaterialLabel(item.raw),
-                            ...explorerWrap(item.raw.sourceTitle), item.raw.sourceLocation, '클릭하면 아래 상세 정보 표시']
-                    }}
-                },
-                scales: {
-                    x: {type: 'linear', min: 0, max: xMax, title: {display: true, text: '파스너 직경 d (mm)'}, ticks: {stepSize: 4, color: text}, grid: {color: grid}},
-                    y: {min: 0, max: yMax, title: {display: true, text: '지압강도 (MPa)'}, ticks: {color: text}, grid: {color: grid}}
-                }
-            }
-        }));
+        sets.get(key).data.push(p);
     }
+    const legend = document.getElementById('woodLegend'); legend.replaceChildren();
+    for (const series of sets.values()) {
+        const item = document.createElement('span'); legend.appendChild(item);
+        const symbol = appendText(item, 'span', series.pointStyle === 'circle' ? '●' : series.pointStyle === 'triangle' ? '△' : '◆', 'legend-marker');
+        symbol.style.color = series.borderColor;
+        appendText(item, 'span', series.label);
+    }
+    explorerCharts.push(new Chart(document.getElementById('woodScatter'), {
+        type: 'scatter', data: {datasets: [...sets.values()]}, options: {
+            responsive: true, maintainAspectRatio: false, animation: false,
+            interaction: {mode: 'point', intersect: true}, layout: {padding: {top: 8, right: 10}},
+            onClick: (event, hits, chart) => {
+                if (hits.length) showExplorerDetails(hits.map(hit => chart.data.datasets[hit.datasetIndex].data[hit.index]));
+            },
+            plugins: {
+                legend: {display: false},
+                tooltip: {callbacks: {
+                    title: items => speciesLabel(speciesName(items[0].raw)),
+                    label: item => `${item.raw.measurement}: ${item.raw.y} MPa · ${item.raw.x} mm`,
+                    afterLabel: item => [item.raw.scientificName, item.raw.testSetupLabel, ...explorerWrap(item.raw.strengthBasisLabel),
+                        explorerMaterialLabel(item.raw),
+                        ...explorerWrap(item.raw.sourceTitle), item.raw.sourceLocation, '클릭하면 아래 상세 정보 표시']
+                }}
+            },
+            scales: {
+                x: {type: 'linear', min: 0, max: xMax, title: {display: true, text: '파스너 직경 d (mm)'}, ticks: {stepSize: 4, color: text}, grid: {color: grid}},
+                y: {min: 0, max: yMax, title: {display: true, text: '지압강도 (MPa)'}, ticks: {color: text}, grid: {color: grid}}
+            }
+        }
+    }));
     const distribution = strengthDistribution(points);
     explorerCharts.push(new Chart(document.getElementById('strengthHistogram'), {
         type: 'bar', data: {labels: distribution.labels, datasets: [
-            {label: '침엽수', data: distribution.softwood, backgroundColor: '#3182f6bb'},
-            {label: '활엽수', data: distribution.hardwood, backgroundColor: '#e58a20bb'}
+            {label: groupLabel, data: group === 'SOFTWOOD' ? distribution.softwood : distribution.hardwood,
+                backgroundColor: group === 'SOFTWOOD' ? '#3182f6bb' : '#e58a20bb'}
         ]}, options: {responsive: true, maintainAspectRatio: false, animation: false,
             scales: {x: {title: {display: true, text: '강도 구간 (MPa) · 하한 포함 / 상한 미만'}, grid: {color: grid}},
                 y: {beginAtZero: true, ticks: {precision: 0}, title: {display: true, text: '보고된 강도값 개수'}, grid: {color: grid}}}}
@@ -183,11 +236,6 @@ function renderExplorer() {
 document.addEventListener('DOMContentLoaded', () => {
     const data = window.woodExplorerData;
     if (!data) return;
-    const papers = new Map(data.points.map(p => [p.sourceId, p.sourceTitle]));
-    for (const [id, title] of papers) {
-        const option = document.createElement('option'); option.value = id; option.textContent = title;
-        document.getElementById('sourceFilter').appendChild(option);
-    }
     for (const id of explorerFilterIds) document.getElementById(id).addEventListener('change', renderExplorer);
     document.getElementById('resetFilters').addEventListener('click', () => {
         Object.values(explorerDefaults).forEach((value, i) => document.getElementById(explorerFilterIds[i]).value = value);

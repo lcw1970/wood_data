@@ -44,7 +44,7 @@ class ReviewedImportTests(unittest.TestCase):
             self.assertEqual(self.rows, updated[:-1])
             self.assertEqual(row, updated[-1])
             self.assertEqual(summary['values'], len(self.rows)+1)
-            self.assertEqual(summary['papers'], 6)
+            self.assertEqual(summary['papers'], len({r['study_id'] for r in self.rows})+1)
 
     def test_nonfinite_values_wrong_sample_status_and_mixed_statistics_are_rejected(self):
         for field, value in [('strength_mpa', 'NaN'), ('diameter_mm', '0'), ('value_statistic', 'CHARACTERISTIC'),

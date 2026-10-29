@@ -2,15 +2,17 @@
 .explorer-header, .explorer-chart-heading { display:flex; justify-content:space-between; align-items:center; gap:24px; flex-wrap:wrap; }
 .explorer-kicker { color:#3182f6; font-size:12px; letter-spacing:1.8px; font-weight:700; }
 .explorer-filters { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
-.explorer-filters .form-label { font-size:13px; font-weight:600; }
-.explorer-filters .form-select { font-size:14px; }
+.explorer-species-filters { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,2fr); gap:16px; }
+.explorer-species-filters > div { min-width:0; }
+.explorer-filters .form-label, .explorer-species-filters .form-label { font-size:13px; font-weight:600; }
+.explorer-filters .form-select, .explorer-species-filters .form-select { font-size:14px; }
+@media(max-width:650px) { .explorer-species-filters { grid-template-columns:minmax(0,1fr); gap:12px; } }
 .explorer-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
 .explorer-stats .toss-card { padding:20px 24px; }
 .explorer-stats span, .explorer-stats small { display:block; color:var(--text-sub); font-size:12px; }
 .explorer-stats strong { display:block; font-size:32px; margin:6px 0; }
-.scatter-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
 .scatter-panel { min-width:0; padding:18px; background:var(--bg-inner); border:1px solid var(--border-c); border-radius:12px; position:relative; }
-.scatter-canvas { position:relative; height:360px; }
+.scatter-canvas { position:relative; height:clamp(420px,60vh,680px); }
 .explorer-legend { display:flex; flex-wrap:wrap; justify-content:center; gap:6px 14px; margin-top:12px; min-height:42px; align-content:start; }
 .explorer-legend span { font-size:11px; }
 .explorer-legend .legend-marker { font-size:16px; margin-right:4px; line-height:1; }
@@ -26,5 +28,4 @@
 [data-theme="dark"] .point-details a, [data-theme="dark"] .explorer-table a { color:#7ab8ff; }
 .explorer-table { min-width:900px; }
 .explorer-table td { max-width:300px; overflow-wrap:anywhere; }
-@media(max-width:1050px) { .scatter-grid { grid-template-columns:minmax(0,1fr); } }
-@media(max-width:650px) { .explorer-page { width:94%; margin-top:16px; } .toss-card { padding:18px; } .explorer-filters { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; } .explorer-stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; } .explorer-stats .toss-card { padding:14px; } .scatter-panel { padding:10px; } .scatter-canvas { height:380px; } }
+@media(max-width:650px) { .explorer-page { width:94%; margin-top:16px; } .toss-card { padding:18px; } .explorer-filters { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; } .explorer-stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; } .explorer-stats .toss-card { padding:14px; } .scatter-panel { padding:10px; } .scatter-canvas { height:420px; } }

@@ -94,7 +94,7 @@ class LiteratureDatasetServiceTests {
     @Test
     @SuppressWarnings("unchecked")
     void reportedGravityReachesCardsAndEveryChartPointWithoutBecomingDensity() {
-        var rows = new LiteratureDatasetService("exports/literature_strength_long.csv").readAll();
+        var rows = new LiteratureDatasetService("src/test/resources/literature_baseline_87.csv").readAll();
         var expected = Map.of("Cryptomeria japonica (STS 12T)", 0.36,
                 "Larix kaempferi (STS 12T)", 0.51, "Pinus koraiensis (STS 12T)", 0.45);
         var cards = new LiteratureComparisonService().compare(rows, 560, 12, "SOFTWOOD",

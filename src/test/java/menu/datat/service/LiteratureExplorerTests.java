@@ -17,15 +17,20 @@ class LiteratureExplorerTests {
         assertEquals("explorer", controller.exploreLiterature(model));
         var data = (Map<String, Object>) model.get("explorerData");
         var points = (List<LiteratureComparisonService.MeasuredPoint>) data.get("points");
-        assertEquals(45, data.get("trialCount"));
-        assertEquals(87, data.get("pointCount"));
-        assertEquals(5L, data.get("sourceCount"));
+        assertEquals(186, data.get("trialCount"));
+        assertEquals(228, data.get("pointCount"));
+        assertEquals(17L, data.get("sourceCount"));
         assertEquals(25, data.get("excludedCount"));
-        assertEquals(45, points.stream().map(LiteratureComparisonService.MeasuredPoint::cardId).distinct().count());
-        assertEquals(41, points.stream().filter(p -> p.direction().equals("PARALLEL")).count());
-        assertEquals(8, points.stream().filter(p -> p.category().contains("활엽수")).count());
-        assertEquals(18, points.stream().filter(p -> p.testSetup().equals("FULL_HOLE")).count());
-        assertEquals(69, points.stream().filter(p -> p.testSetup().equals("HALF_HOLE")).count());
+        assertEquals(186, points.stream().map(LiteratureComparisonService.MeasuredPoint::cardId).distinct().count());
+        assertEquals(129, points.stream().filter(p -> p.direction().equals("PARALLEL")).count());
+        assertEquals(30, points.stream().filter(p -> p.category().contains("활엽수")).count());
+        assertEquals(87, points.stream().filter(p -> p.testSetup().equals("FULL_HOLE")).count());
+        assertEquals(141, points.stream().filter(p -> p.testSetup().equals("HALF_HOLE")).count());
+        assertEquals(19, points.stream().map(LiteratureComparisonService.MeasuredPoint::speciesScientific).distinct().count());
+        assertTrue(points.stream().allMatch(p -> p.speciesScientific() != null && !p.speciesScientific().isBlank()));
+        var spruce = points.stream().filter(p -> p.speciesScientific().equals("Picea abies")).toList();
+        assertTrue(spruce.stream().map(LiteratureComparisonService.MeasuredPoint::sourceId).distinct().count() > 1);
+        assertTrue(spruce.stream().map(LiteratureComparisonService.MeasuredPoint::scientificName).distinct().count() > 1);
         assertTrue(points.stream().filter(p -> p.sourceId().equals("paper-9"))
                 .allMatch(p -> p.strengthBasis().equals("EN383_MAX_5MM") && p.testSetup().equals("FULL_HOLE")));
         assertTrue(points.stream().filter(p -> p.sourceId().equals("paper-30"))
@@ -46,7 +51,7 @@ class LiteratureExplorerTests {
         var model = new ExtendedModelMap();
         controller.getWoodDataList(model);
         var rows = (List<WoodEmbedmentDto>) model.get("woodList");
-        assertEquals(70, rows.size());
+        assertEquals(211, rows.size());
         assertEquals(25, rows.stream().filter(r -> r.getTestSetup().equals("UNKNOWN") && r.getStrengthBasis().equals("UNKNOWN")).count());
         assertEquals("시험 형상 미확인", rows.getFirst().getTestSetupLabel());
     }
