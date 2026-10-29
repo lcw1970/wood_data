@@ -43,6 +43,10 @@ function explorerAxisBounds(points) {
 }
 function speciesName(point) { return point.scientificName.replace(/\s*\(.+$/, ''); }
 function explorerWrap(text, width = 48) { return String(text || '').match(new RegExp(`.{1,${width}}`, 'g')) || []; }
+function explorerMaterialLabel(point) {
+    const density = point.density == null ? '밀도 미기재' : `밀도 ${point.density} kg/m³`;
+    return point.specificGravity == null ? density : `비중 G=${point.specificGravity} · ${density}`;
+}
 function readExplorerFilters() {
     const names = Object.keys(explorerDefaults);
     return Object.fromEntries(names.map((name, i) => [name, document.getElementById(explorerFilterIds[i]).value]));
@@ -66,7 +70,8 @@ function showExplorerDetails(points) {
         const article = document.createElement('article'); target.appendChild(article);
         appendText(article, 'h4', p.scientificName);
         appendText(article, 'p', `${p.category} · ${p.fastenerType === 'SCREW' ? '스크류' : '다월·볼트 평활부'} · ${p.measurement}`);
-        appendText(article, 'p', `직경 ${p.x} mm · 강도 ${p.y} MPa · 밀도 ${p.density == null ? '미기재' : p.density + ' kg/m³'}`, 'fw-bold');
+        appendText(article, 'p', `직경 ${p.x} mm · 강도 ${p.y} MPa`, 'fw-bold');
+        appendText(article, 'p', explorerMaterialLabel(p), 'fw-bold');
         appendText(article, 'p', `${p.testSetupLabel} · ${p.strengthBasisLabel}`);
         appendText(article, 'p', p.standard, 'text-muted');
         appendText(article, 'p', p.testConditions);
@@ -78,7 +83,7 @@ function renderExplorerTable(points) {
     const body = document.getElementById('pointTableBody'); body.replaceChildren();
     if (!points.length) {
         const row = document.createElement('tr'), cell = appendText(row, 'td', '현재 필터에 맞는 값이 없습니다.');
-        cell.colSpan = 7; body.appendChild(row); return;
+        cell.colSpan = 8; body.appendChild(row); return;
     }
     for (const p of points) {
         const row = document.createElement('tr'); body.appendChild(row);
@@ -90,6 +95,7 @@ function renderExplorerTable(points) {
         });
         appendText(row, 'td', `${p.scientificName} · ${p.category}`);
         appendText(row, 'td', p.measurement); appendText(row, 'td', `${p.x} mm`); appendText(row, 'td', `${p.y} MPa`);
+        appendText(row, 'td', explorerMaterialLabel(p));
         appendText(row, 'td', `${p.testSetupLabel} · ${p.strengthBasisLabel}`);
         const source = document.createElement('td'); row.appendChild(source); paperLink(source, p, p.sourceTitle);
     }
@@ -152,7 +158,7 @@ function renderExplorer() {
                         title: items => items[0].raw.scientificName,
                         label: item => `${item.raw.measurement}: ${item.raw.y} MPa · ${item.raw.x} mm`,
                         afterLabel: item => [item.raw.testSetupLabel, ...explorerWrap(item.raw.strengthBasisLabel),
-                            `밀도 ${item.raw.density == null ? '미기재' : item.raw.density + ' kg/m³'}`,
+                            explorerMaterialLabel(item.raw),
                             ...explorerWrap(item.raw.sourceTitle), item.raw.sourceLocation, '클릭하면 아래 상세 정보 표시']
                     }}
                 },

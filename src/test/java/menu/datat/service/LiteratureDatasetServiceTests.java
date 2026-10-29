@@ -54,7 +54,7 @@ class LiteratureDatasetServiceTests {
         assertThrows(IOException.class, () -> LiteratureDatasetService.parseMaster(new StringReader(csv(first, first))));
         for (var entry : Map.of("strength_mpa", "NaN", "density_kg_m3", "0", "value_statistic", "CHARACTERISTIC",
                 "observation_level", "SPECIMEN", "source_url", "https://doi.org.evil.example/id",
-                "grain_angle_deg", "45", "n_specimens", "6").entrySet()) {
+                "grain_angle_deg", "45", "n_specimens", "6", "specific_gravity", "NaN").entrySet()) {
             var invalid = new LinkedHashMap<>(first); invalid.put(entry.getKey(), entry.getValue());
             assertThrows(IOException.class, () -> LiteratureDatasetService.parseMaster(new StringReader(csv(invalid))), entry.getKey());
         }
@@ -89,5 +89,31 @@ class LiteratureDatasetServiceTests {
         assertEquals(List.of("44.11", "39.72", "26.15", "29.52"), added.stream().map(r -> r.get("strength_mpa")).toList());
         assertEquals(23, added.stream().mapToInt(r -> Integer.parseInt(r.get("n_specimens"))).sum());
         assertTrue(added.stream().allMatch(r -> r.get("fastener_type").equals("DOWEL") && r.get("test_setup").equals("HALF_HOLE")));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void reportedGravityReachesCardsAndEveryChartPointWithoutBecomingDensity() {
+        var rows = new LiteratureDatasetService("exports/literature_strength_long.csv").readAll();
+        var expected = Map.of("Cryptomeria japonica (STS 12T)", 0.36,
+                "Larix kaempferi (STS 12T)", 0.51, "Pinus koraiensis (STS 12T)", 0.45);
+        var cards = new LiteratureComparisonService().compare(rows, 560, 12, "SOFTWOOD",
+                EmbedmentPredictionService.FastenerType.SCREW);
+        assertEquals(3, cards.references().size());
+        for (var card : cards.references()) {
+            assertEquals(expected.get(card.wood().getScientificName()), card.wood().getSpecificGravity());
+            assertEquals("직경 유사 · 비중 기재", card.conditionLabel());
+            assertNull(card.density());
+            assertFalse(card.close());
+        }
+        var data = new LiteratureComparisonService().explorerData(rows);
+        var points = (List<LiteratureComparisonService.MeasuredPoint>) data.get("points");
+        assertEquals(87, points.size());
+        assertEquals(65, points.stream().filter(p -> p.specificGravity() != null && p.density() == null).count());
+        assertEquals(22, points.stream().filter(p -> p.density() != null).count());
+        for (var point : points) {
+            if (expected.containsKey(point.scientificName()))
+                assertEquals(expected.get(point.scientificName()), point.specificGravity());
+        }
     }
 }

@@ -86,6 +86,8 @@ def validate(columns, rows, sources):
             numeric(row[key], key)
         if row["density_kg_m3"]:
             numeric(row["density_kg_m3"], "density_kg_m3")
+        if row["specific_gravity"]:
+            numeric(row["specific_gravity"], "specific_gravity")
         if numeric(row["grain_angle_deg"], "grain_angle_deg", False) != (0 if row["load_direction"] == "PARALLEL" else 90):
             raise ValueError("하중 방향과 각도가 일치하지 않습니다.")
         for value_key, status_key in (("n_specimens", "n_status"), ("strength_sd_mpa", "sd_status")):

@@ -72,7 +72,7 @@ test('auto scale leaves room above values over 50 MPa and allows a zero baseline
 });
 
 test('paper values remain separate scatter points with original density, R/T and source', () => {
-    const base = {x: 12, scientificName: 'Larix', density: null, close: false,
+    const base = {x: 12, scientificName: 'Larix', density: null, specificGravity: 0.51, close: false,
         conditionLabel: '밀도 미기재', standard: 'KS F 2156', sourceTitle: 'Paper title',
         sourceLocation: 'Table 5', sourceUrl: 'https://doi.org/example', cardId: 'trial'};
     const parallel = [{...base, y: 30.66, measurement: '평행'},
@@ -92,6 +92,10 @@ test('paper values remain separate scatter points with original density, R/T and
     const tip = rendered[0].options.plugins.tooltip.callbacks;
     const lines = tip.afterLabel({raw: parallel[0]});
     assert.ok(lines.some(line => line.includes('밀도 미기재')));
+    assert.ok(lines.some(line => line.includes('비중 G=0.51')));
+    assert.ok(!lines.some(line => line.includes('510 kg/m³')));
+    const both = tip.afterLabel({raw: parallel[1]});
+    assert.ok(both.some(line => line.includes('비중 G=0.51') && line.includes('555 kg/m³')));
     assert.ok(lines.includes('Table 5'));
     assert.ok(lines.includes('https://doi.org/example'));
     assert.ok(!lines.some(line => line.includes('560')));

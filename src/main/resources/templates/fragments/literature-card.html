@@ -16,10 +16,11 @@
     </div>
     <div class="row g-3 mb-3">
         <div class="col-6">
-            <div class="text-muted small">논문 밀도</div>
-            <div class="fw-semibold" th:text="${candidate.density == null ? '미기재' : #numbers.formatDecimal(candidate.density, 1, 1) + ' kg/m³'}"></div>
+            <div class="text-muted small" th:text="${candidate.density == null and candidate.wood.specificGravity != null ? '논문 비중' : '논문 밀도'}"></div>
+            <div class="fw-semibold" th:text="${candidate.density != null ? #numbers.formatDecimal(candidate.density, 1, 1) + ' kg/m³' : (candidate.wood.specificGravity != null ? 'G = ' + candidate.wood.specificGravity : '미기재')}"></div>
+            <div th:if="${candidate.density != null and candidate.wood.specificGravity != null}" class="text-muted small" th:text="${'비중 G = ' + candidate.wood.specificGravity}"></div>
             <div th:if="${candidate.density != null}" class="text-muted small" th:text="${'입력과 차이 ' + #numbers.formatDecimal(candidate.densityDifference, 1, 1) + ' kg/m³ (' + #numbers.formatDecimal(candidate.densityDifferencePercent, 1, 1) + '%)'}"></div>
-            <div th:if="${candidate.density == null}" class="text-muted small">밀도 근접 여부를 판단할 수 없음</div>
+            <div th:if="${candidate.density == null}" class="text-muted small">밀도 미기재 · 밀도 근접 여부 판단 불가</div>
         </div>
         <div class="col-6">
             <div class="text-muted small">논문 파스너 직경</div>

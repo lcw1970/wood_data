@@ -132,7 +132,7 @@
             <span th:text="${#lists.size(woodList)}">66</span>개 시험 조건 ·
             <span th:text="${verifiedCount}">41</span>개 논문 원문 대조 항목.
             수종이 같아도 시험법·파스너·하중 방향에 따라 값이 다릅니다. 새 항목은 표의 평균 또는 항복값이며 범위·설계값과 구분해 확인하세요.
-            ‘-’는 해당 항목 미수록, R/T는 방사/접선 방향입니다. 비중만 보고된 경우 밀도는 비워 두었습니다.
+            ‘-’는 해당 항목 미수록, R/T는 방사/접선 방향입니다. 비중은 G로 표시하며 보고된 값을 그대로 제공합니다.
         </p>
         <!-- 검색창 -->
         <div class="row mb-3 mb-md-4">
@@ -149,7 +149,7 @@
                     <th style="width: 50px;">번호</th>
                     <th class="text-start">학명 (Scientific Name)</th>
                     <th>분류</th>
-                    <th>밀도 (kg/m³)</th>
+                    <th>밀도 (kg/m³)·비중 G</th>
                     <th>파스너 (mm)</th>
                     <th>섬유평행 강도 (MPa)</th>
                     <th>섬유직각 강도 (MPa)</th>
@@ -172,7 +172,11 @@
                               th:text="${wood.category}">
                         </span>
                     </td>
-                    <td th:text="${wood.densityRange}"></td>
+                    <td>
+                        <div th:if="${wood.densityRange != '-'}" th:text="${wood.densityRange}"></div>
+                        <div th:if="${wood.specificGravity != null}" th:text="${'G = ' + wood.specificGravity}"></div>
+                        <span th:if="${wood.densityRange == '-' and wood.specificGravity == null}">-</span>
+                    </td>
                     <td th:text="${wood.screwRange}"></td>
                     <td class="fw-bold text-primary" th:text="${wood.parallelStrength}"></td>
                     <td class="fw-bold text-success" th:text="${wood.perpStrength}"></td>

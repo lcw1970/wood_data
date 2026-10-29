@@ -22,6 +22,15 @@ public class WoodEmbedmentDto {
     private String testSetup;        // FULL_HOLE / HALF_HOLE / UNKNOWN; 원문 시험 형상
     private String strengthBasis;    // EN383_MAX_5MM / OFFSET_5_PERCENT / UNKNOWN
     private String testGroupId;
+    private Double specificGravity; // 원문 보고 비중. 밀도로 환산하지 않음.
+
+    public WoodEmbedmentDto(String scientificName, String category, String densityRange, String screwRange,
+                            String parallelStrength, String perpStrength, String standard, String paperUrl,
+                            String sourceId, String sourceTitle, String sourceLocation, String fastenerType,
+                            String testConditions, String testSetup, String strengthBasis, String testGroupId) {
+        this(scientificName, category, densityRange, screwRange, parallelStrength, perpStrength, standard, paperUrl,
+                sourceId, sourceTitle, sourceLocation, fastenerType, testConditions, testSetup, strengthBasis, testGroupId, null);
+    }
 
     public WoodEmbedmentDto(String scientificName, String category, String densityRange, String screwRange,
                             String parallelStrength, String perpStrength, String standard, String paperUrl,

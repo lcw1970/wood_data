@@ -18,6 +18,15 @@ public class LiteratureComparisonService {
     public static final double DENSITY_TOLERANCE_PERCENT = 10.0;
     public static final double DIAMETER_TOLERANCE_MM = 1.0;
 
+    public enum TestSetupFilter {
+        ALL("전체"), HALF_HOLE("Half-hole · 반공법"), FULL_HOLE("Full-hole · 전공법");
+
+        private final String label;
+        TestSetupFilter(String label) { this.label = label; }
+        public String getLabel() { return label; }
+        public boolean includes(String setup) { return this == ALL || name().equals(setup); }
+    }
+
     public record Candidate(WoodEmbedmentDto wood, Double density, double diameter,
                             Double densityDifference, Double densityDifferencePercent,
                             double diameterDifference, boolean close, String conditionLabel) {
@@ -32,7 +41,8 @@ public class LiteratureComparisonService {
                                 String conditionLabel, String measurement, String standard, String sourceTitle,
                                 String sourceLocation, String sourceUrl, String cardId, String sourceId,
                                 String category, String fastenerType, String testSetup, String testSetupLabel,
-                                String strengthBasis, String strengthBasisLabel, String testConditions, String direction) { }
+                                String strengthBasis, String strengthBasisLabel, String testConditions, String direction,
+                                Double specificGravity) { }
 
     public record Comparison(List<Candidate> closeMatches, List<Candidate> references,
                              int sameMaterialCount) { }
@@ -81,14 +91,22 @@ public class LiteratureComparisonService {
                 wood.getSourceLocation(), wood.getPaperUrl(), c.cardId(), wood.getSourceId(), wood.getCategory(),
                 wood.getFastenerType(), wood.getTestSetup(), wood.getTestSetupLabel(), wood.getStrengthBasis(),
                 wood.getStrengthBasisLabel(), wood.getTestConditions(), measurement.contains("평행") ? "PARALLEL"
-                : measurement.contains("R(") ? "R" : measurement.contains("T(") ? "T" : "PERPENDICULAR");
+                : measurement.contains("R(") ? "R" : measurement.contains("T(") ? "T" : "PERPENDICULAR",
+                wood.getSpecificGravity());
     }
 
     public Comparison compare(List<WoodEmbedmentDto> rows, double density, double diameter, String woodType, FastenerType type) {
+        return compare(rows, density, diameter, woodType, type, TestSetupFilter.ALL);
+    }
+
+    public Comparison compare(List<WoodEmbedmentDto> rows, double density, double diameter, String woodType,
+                              FastenerType type, TestSetupFilter testSetup) {
         List<WoodEmbedmentDto> materialRows = rows.stream()
                 .filter(this::hasVerifiedSource)
                 .filter(row -> type.name().equals(row.getFastenerType()))
                 .filter(row -> sameMaterial(row.getCategory(), woodType))
+                // Filter before ranking/limits so another setup cannot displace a matching trial.
+                .filter(row -> testSetup.includes(row.getTestSetup()))
                 .toList();
         Comparator<Candidate> order = Comparator
                 .comparingDouble((Candidate c) -> c.densityDifferencePercent() == null
@@ -137,7 +155,8 @@ public class LiteratureComparisonService {
         Double percent = densityDifference == null ? null : densityDifference / inputDensity * 100.0;
         boolean close = percent != null && percent <= DENSITY_TOLERANCE_PERCENT + 1e-9
                 && diameterDifference <= DIAMETER_TOLERANCE_MM + 1e-9;
-        String label = actualDensity == null ? "직경 유사 · 밀도 미기재"
+        String label = actualDensity == null ? (row.getSpecificGravity() == null
+                ? "직경 유사 · 밀도·비중 미기재" : "직경 유사 · 비중 기재")
                 : close ? "밀도·직경 근접" : "직경 유사 · 밀도 조건 다름";
         if (close && densityDifference < 1e-9 && diameterDifference < 1e-9) label = "밀도·직경 수치 일치";
         return new Candidate(row, actualDensity, actualDiameter, densityDifference, percent,

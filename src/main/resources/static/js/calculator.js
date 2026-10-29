@@ -34,6 +34,11 @@ function tooltipLines(text, width = 55) {
     return (text || '').match(new RegExp(`.{1,${width}}(?:\\s|$)|.{1,${width}}`, 'g')) || [];
 }
 
+function paperMaterialLabel(point) {
+    const density = point.density == null ? '밀도 미기재' : `밀도 ${point.density} kg/m³`;
+    return point.specificGravity == null ? density : `비중 G=${point.specificGravity} · ${density}`;
+}
+
 function buildCharts() {
     const parallelCanvas = document.getElementById('chartParallel');
     const perpendicularCanvas = document.getElementById('chartPerpendicular');
@@ -110,7 +115,7 @@ function buildCharts() {
                             ? `논문 실측 · ${item.raw.measurement}: ${item.parsed.y.toFixed(2)} MPa`
                             : `${item.dataset.label}: ${item.parsed.y.toFixed(2)} MPa`,
                         afterLabel: item => item.raw.cardId ? [
-                            `논문 직경 ${item.raw.x} mm · 논문 밀도 ${item.raw.density == null ? '미기재' : item.raw.density + ' kg/m³'}`,
+                            `논문 직경 ${item.raw.x} mm`, paperMaterialLabel(item.raw),
                             item.raw.conditionLabel, ...tooltipLines(item.raw.standard),
                             item.raw.testSetupLabel, ...tooltipLines(item.raw.strengthBasisLabel),
                             ...tooltipLines(item.raw.sourceTitle), item.raw.sourceLocation,

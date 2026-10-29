@@ -2,6 +2,7 @@ package menu.datat.controller;
 
 import menu.datat.dto.WoodEmbedmentDto;
 import menu.datat.service.LiteratureComparisonService;
+import menu.datat.service.LiteratureComparisonService.TestSetupFilter;
 import menu.datat.service.EmbedmentPredictionService;
 import menu.datat.service.LiteratureDatasetService;
 import menu.datat.service.EmbedmentPredictionService.FastenerType;
@@ -66,6 +67,7 @@ public class WoodController {
                             @RequestParam(value = "woodType", defaultValue = "SOFTWOOD") String woodType,
                             @RequestParam(value = "calcMode", defaultValue = "STRENGTH") String calcMode,
                             @RequestParam(value = "fastenerType", defaultValue = "SCREW") FastenerType fastenerType,
+                            @RequestParam(value = "testSetup", defaultValue = "ALL") TestSetupFilter testSetup,
                             Model model) {
 
         model.addAttribute("inputDensity", density);
@@ -74,6 +76,7 @@ public class WoodController {
         model.addAttribute("inputWoodType", woodType);
         model.addAttribute("inputCalcMode", calcMode);
         model.addAttribute("inputFastenerType", fastenerType);
+        model.addAttribute("inputTestSetup", testSetup);
         if (!Double.isFinite(density) || density <= 0 || !Double.isFinite(diameter)
                 || diameter <= 0 || diameter > 30 || (thickness != null && (!Double.isFinite(thickness) || thickness <= 0))) {
             model.addAttribute("inputError", "밀도는 0보다 크게, 직경은 0 초과 30 mm 이하으로 입력해 주세요. 두께를 입력하는 경우 0보다 커야 합니다.");
@@ -110,8 +113,9 @@ public class WoodController {
 
         model.addAttribute("result", result);
 
-        var comparison = literature.compare(readWoodData(), density, diameter, woodType, fastenerType);
+        var comparison = literature.compare(readWoodData(), density, diameter, woodType, fastenerType, testSetup);
         var chartData = new LinkedHashMap<>(predictions.chartData(density, diameter, woodType, fastenerType));
+        chartData.put("testSetup", testSetup.name());
         chartData.put("measurements", literature.chartPoints(comparison));
         model.addAttribute("chartData", chartData);
         model.addAttribute("closeMatches", comparison.closeMatches());

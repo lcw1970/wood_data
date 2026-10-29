@@ -51,3 +51,10 @@ test('largest diameters stay inside the plot with marker and hover room', () => 
     assert.ok(context.explorerAxisBounds([]).xMax > 0);
     assert.ok(context.explorerAxisBounds([]).yMax > 0);
 });
+
+test('reported gravity is visible independently of density and never converted to kg/m³', () => {
+    assert.equal(context.explorerMaterialLabel({...base, specificGravity: 0.51}), '비중 G=0.51 · 밀도 미기재');
+    assert.equal(context.explorerMaterialLabel({...base, density: 466}), '밀도 466 kg/m³');
+    assert.equal(context.explorerMaterialLabel({...base, density: 466, specificGravity: 0.51}), '비중 G=0.51 · 밀도 466 kg/m³');
+    assert.equal(context.explorerMaterialLabel(base), '밀도 미기재');
+});

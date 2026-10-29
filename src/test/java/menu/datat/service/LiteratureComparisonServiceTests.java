@@ -2,6 +2,7 @@ package menu.datat.service;
 
 import menu.datat.controller.WoodController;
 import menu.datat.service.EmbedmentPredictionService.FastenerType;
+import menu.datat.service.LiteratureComparisonService.TestSetupFilter;
 import menu.datat.dto.WoodEmbedmentDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.ui.ExtendedModelMap;
@@ -15,11 +16,84 @@ class LiteratureComparisonServiceTests {
     private final LiteratureComparisonService service = new LiteratureComparisonService();
 
     @Test
+    void setupFilterSeparatesCloseAndReferenceTrialsAndKeepsUnknownOnlyInAll() {
+        var rows = new java.util.ArrayList<WoodEmbedmentDto>();
+        for (String setup : List.of("HALF_HOLE", "FULL_HOLE", "UNKNOWN")) {
+            for (String density : List.of("500", "-")) {
+                var trial = row("침엽수", density, "12", "paper-34");
+                trial.setTestSetup(setup);
+                trial.setTestGroupId(setup + density);
+                rows.add(trial);
+            }
+        }
+        var all = service.compare(rows, 500, 12, "SOFTWOOD", FastenerType.DOWEL);
+        assertEquals(3, all.closeMatches().size());
+        assertEquals(3, all.references().size());
+        for (var setup : List.of(TestSetupFilter.HALF_HOLE, TestSetupFilter.FULL_HOLE)) {
+            var selected = service.compare(rows, 500, 12, "SOFTWOOD", FastenerType.DOWEL, setup);
+            assertEquals(2, selected.sameMaterialCount());
+            assertEquals(1, selected.closeMatches().size());
+            assertEquals(1, selected.references().size());
+            var points = service.chartPoints(selected);
+            for (var direction : points.values()) {
+                assertEquals(2, direction.size());
+                assertTrue(direction.stream().allMatch(p -> setup.name().equals(p.testSetup())));
+            }
+        }
+    }
+
+    @Test
+    void setupFilteringHappensBeforeReferenceLimit() {
+        var rows = new java.util.ArrayList<WoodEmbedmentDto>();
+        for (int index = 0; index < 6; index++) {
+            var trial = row("침엽수", "-", "12", "paper-34");
+            trial.setTestSetup("HALF_HOLE");
+            rows.add(trial);
+        }
+        var full = row("침엽수", "-", "12", "paper-34");
+        full.setTestSetup("FULL_HOLE");
+        rows.add(full);
+        var selected = service.compare(rows, 500, 12, "SOFTWOOD", FastenerType.DOWEL, TestSetupFilter.FULL_HOLE);
+        assertEquals(List.of(full), selected.references().stream().map(LiteratureComparisonService.Candidate::wood).toList());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void calculatorSetupChangesMeasurementsButNeverPredictions() {
+        var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("exports/literature_strength_long.csv"));
+        Map<String, Object> baseline = null;
+        for (var setup : TestSetupFilter.values()) {
+            var model = new ExtendedModelMap();
+            controller.calculate(500, 12, null, "SOFTWOOD", "STRENGTH", FastenerType.SCREW, setup, model);
+            assertEquals(setup, model.get("inputTestSetup"));
+            var chart = new java.util.LinkedHashMap<>((Map<String, Object>) model.get("chartData"));
+            var measured = (Map<String, List<LiteratureComparisonService.MeasuredPoint>>) chart.remove("measurements");
+            assertEquals(setup.name(), chart.remove("testSetup"));
+            if (baseline == null) baseline = chart;
+            else assertEquals(baseline, chart);
+            assertEquals(setup == TestSetupFilter.FULL_HOLE ? 0 : 3, measured.get("parallel").size());
+            assertEquals(setup == TestSetupFilter.FULL_HOLE ? 0 : 6, measured.get("perpendicular").size());
+            assertTrue(measured.values().stream().flatMap(List::stream).allMatch(p -> "HALF_HOLE".equals(p.testSetup())));
+            var prediction = ((List<EmbedmentPredictionService.Value>) model.get("predictionModels")).getFirst();
+            assertEquals(36.08, prediction.parallel());
+            assertEquals(23.58, prediction.perpendicular());
+        }
+        // A mixed dataset proves Full-hole isn't always empty and both directions/cards agree.
+        for (var setup : List.of(TestSetupFilter.HALF_HOLE, TestSetupFilter.FULL_HOLE)) {
+            var model = new ExtendedModelMap();
+            controller.calculate(466, 12, null, "GLT", "STRENGTH", FastenerType.DOWEL, setup, model);
+            var cards = (List<LiteratureComparisonService.Candidate>) model.get("closeMatches");
+            assertEquals(setup == TestSetupFilter.HALF_HOLE ? 1 : 3, cards.size());
+            assertTrue(cards.stream().allMatch(c -> setup.name().equals(c.wood().getTestSetup())));
+        }
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void realChartPointsKeepMissingDensityAndSeparateRadialTangentialMeasurements() {
         var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("exports/literature_strength_long.csv"));
         var model = new ExtendedModelMap();
-        controller.calculate(560, 12, null, "SOFTWOOD", "STRENGTH", FastenerType.SCREW, model);
+        controller.calculate(560, 12, null, "SOFTWOOD", "STRENGTH", FastenerType.SCREW, TestSetupFilter.ALL, model);
         var chart = (Map<String, Object>) model.get("chartData");
         var points = (Map<String, List<LiteratureComparisonService.MeasuredPoint>>) chart.get("measurements");
         assertEquals(List.of(24.1, 30.66, 26.3), points.get("parallel").stream().map(LiteratureComparisonService.MeasuredPoint::y).toList());
@@ -31,7 +105,7 @@ class LiteratureComparisonServiceTests {
         assertTrue(points.get("perpendicular").stream().anyMatch(p -> p.measurement().contains("T(접선)")));
 
         var glulam = new ExtendedModelMap();
-        controller.calculate(466, 12, null, "GLT", "STRENGTH", FastenerType.DOWEL, glulam);
+        controller.calculate(466, 12, null, "GLT", "STRENGTH", FastenerType.DOWEL, TestSetupFilter.ALL, glulam);
         chart = (Map<String, Object>) glulam.get("chartData");
         points = (Map<String, List<LiteratureComparisonService.MeasuredPoint>>) chart.get("measurements");
         assertEquals(4, points.get("parallel").size());
@@ -120,13 +194,13 @@ class LiteratureComparisonServiceTests {
     void calculatorRetainsSubmittedConditionsAndRejectsNonFiniteOrOutOfDomainInputs() {
         var controller = new WoodController(service, new EmbedmentPredictionService(), new LiteratureDatasetService("exports/literature_strength_long.csv"));
         var valid = new ExtendedModelMap();
-        assertEquals("calculator", controller.calculate(560, 12.5, null, "SOFTWOOD", "STRENGTH", FastenerType.SCREW, valid));
+        assertEquals("calculator", controller.calculate(560, 12.5, null, "SOFTWOOD", "STRENGTH", FastenerType.SCREW, TestSetupFilter.ALL, valid));
         assertEquals(560.0, valid.get("inputDensity"));
         assertEquals(12.5, valid.get("inputDiameter"));
         assertNotNull(valid.get("result"));
         for (double d : new double[]{0, -12, 100, Double.NaN, Double.POSITIVE_INFINITY}) {
             var invalid = new ExtendedModelMap();
-            controller.calculate(560, d, null, "SOFTWOOD", "STRENGTH", FastenerType.SCREW, invalid);
+            controller.calculate(560, d, null, "SOFTWOOD", "STRENGTH", FastenerType.SCREW, TestSetupFilter.ALL, invalid);
             assertNotNull(invalid.get("inputError"));
             assertFalse(invalid.containsKey("result"));
         }

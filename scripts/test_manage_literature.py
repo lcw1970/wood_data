@@ -48,7 +48,8 @@ class ReviewedImportTests(unittest.TestCase):
 
     def test_nonfinite_values_wrong_sample_status_and_mixed_statistics_are_rejected(self):
         for field, value in [('strength_mpa', 'NaN'), ('diameter_mm', '0'), ('value_statistic', 'CHARACTERISTIC'),
-                             ('observation_level', 'SPECIMEN'), ('n_specimens', '6'), ('grain_angle_deg', '45')]:
+                             ('observation_level', 'SPECIMEN'), ('n_specimens', '6'), ('grain_angle_deg', '45'),
+                             ('specific_gravity', 'NaN')]:
             with self.subTest(field=field):
                 row = dict(self.rows[0]); row[field] = value
                 with self.assertRaises(ValueError):

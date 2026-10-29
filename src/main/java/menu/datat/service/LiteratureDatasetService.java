@@ -83,6 +83,7 @@ public class LiteratureDatasetService {
             checkEnum(row, "value_statistic", "MEAN");
             checkEnum(row, "load_direction", "PARALLEL", "PERPENDICULAR", "RADIAL", "TANGENTIAL");
             number(row, "diameter_mm", false); number(row, "strength_mpa", false); number(row, "density_kg_m3", true);
+            number(row, "specific_gravity", true);
             for (var field : List.of("n_specimens", "strength_sd_mpa")) {
                 String value = row.getOrDefault(field, "");
                 String status = row.getOrDefault(field.equals("n_specimens") ? "n_status" : "sd_status", "");
@@ -129,6 +130,7 @@ public class LiteratureDatasetService {
                     row.get("source_url"), row.get("study_id"), row.get("source_title"), row.get("source_locator"),
                     row.get("fastener_type"), row.get("test_notes"), row.get("test_setup"), row.get("strength_basis"));
             dto.setTestGroupId(row.get("study_id") + "/" + row.get("test_group_id") + "/" + row.get("strength_basis"));
+            dto.setSpecificGravity(row.get("specific_gravity").isBlank() ? null : Double.valueOf(row.get("specific_gravity")));
             result.add(dto);
         }
         return List.copyOf(result);

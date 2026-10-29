@@ -73,6 +73,22 @@
                     </div>
                 </div>
 
+                <fieldset class="mb-3">
+                    <legend class="form-label fw-bold mb-2 fs-6">논문 비교 시험 방식</legend>
+                    <div class="btn-group w-100" role="group" aria-label="논문 비교 시험 방식">
+                        <input type="radio" class="btn-check" name="testSetup" id="setupAll" value="ALL"
+                               th:checked="${inputTestSetup == null or inputTestSetup.name() == 'ALL'}">
+                        <label class="btn btn-outline-primary py-2" for="setupAll">전체</label>
+                        <input type="radio" class="btn-check" name="testSetup" id="setupHalf" value="HALF_HOLE"
+                               th:checked="${inputTestSetup != null and inputTestSetup.name() == 'HALF_HOLE'}">
+                        <label class="btn btn-outline-primary py-2" for="setupHalf">Half-hole · 반공법</label>
+                        <input type="radio" class="btn-check" name="testSetup" id="setupFull" value="FULL_HOLE"
+                               th:checked="${inputTestSetup != null and inputTestSetup.name() == 'FULL_HOLE'}">
+                        <label class="btn btn-outline-primary py-2" for="setupFull">Full-hole · 전공법</label>
+                    </div>
+                    <p class="small text-muted mt-2 mb-0">선택 후 계산하기를 누르면 논문 점과 카드를 해당 시험 방식으로 필터링합니다. 기준식 예측값은 동일하며, 전체에는 시험 형상 미확인 자료도 포함됩니다.</p>
+                </fieldset>
+
                 <div class="row g-3 mb-3">
                     <div class="col-12 col-md-4">
                         <label for="density" class="form-label fw-bold d-block mb-2">목재 밀도 (kg/m³)</label>
@@ -163,6 +179,28 @@
                 <p class="small text-muted mb-0">Cabrera 외(2022) 문헌식 · 스크류 축과 섬유 각도 90° 가정 · 하중 평행·직각 공통. 위 세 기준과 별도로 계산한 예측값이며 논문 실측값은 아닙니다.</p>
             </section>
 
+            <section id="modelTestBasis" class="mb-4" aria-labelledby="modelTestBasisTitle">
+                <h5 id="modelTestBasisTitle" class="fs-6 fw-bold mb-2">기준식의 시험 근거·적용 조건</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-2">
+                        <thead><tr><th scope="col">예측식</th><th scope="col">시험 근거</th><th scope="col">강도 평가·적용 조건</th></tr></thead>
+                        <tbody>
+                        <tr th:each="prediction : ${predictionModels}">
+                            <th scope="row" class="small" th:text="${prediction.label}"></th>
+                            <td class="small text-nowrap" th:text="${prediction.testBasisLabel()}"></td>
+                            <td class="small" th:text="${prediction.testBasisNote()}"></td>
+                        </tr>
+                        <tr th:if="${literaturePrediction != null}">
+                            <th scope="row" class="small" th:text="${literaturePrediction.label}"></th>
+                            <td class="small" th:text="${literaturePrediction.testBasisLabel()}"></td>
+                            <td class="small" th:text="${literaturePrediction.testBasisNote()}"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="small text-muted mb-0">Full-hole/Half-hole은 시험 형상, 항복값/최대값은 강도 평가 방식입니다. 시험 형상이 같아도 나사산부·평활부, 직경·유효면적과 강도 정의를 추가로 확인해야 합니다.</p>
+            </section>
+
             <!-- 2. 목재 압축강도 카드 -->
             <div id="compressiveSection" class="mb-4">
                 <h5 class="fs-6 fw-bold mb-2 text-secondary">2. 밀도 기반 목재 압축강도 참고값</h5>
@@ -185,15 +223,16 @@
             <!-- 그래프 영역 -->
             <div id="predictionCharts" class="p-3 mb-4 border rounded bg-white">
                 <h5 class="fs-6 fw-bold mb-1">입력 밀도에서의 기준별 예측곡선 (밀도 ρ = <span th:text="${result['density']}"></span> kg/m³)</h5>
+                <p id="chartTestSetup" class="small fw-semibold mb-2">표시할 논문 시험 방식: <span th:text="${inputTestSetup.label}"></span> · 선택은 실측자료에만 적용</p>
                 <p class="text-muted small mb-2">선은 입력 밀도를 고정한 예측이며 큰 원은 현재 입력 직경입니다. ◆는 밀도·직경이 근접한 논문 실측, △는 밀도가 다르거나 미기재인 논문 실측입니다. 논문 값은 해당 시험 직경·강도 그대로 표시합니다.</p>
-                <p class="text-muted small mb-3">실측 점을 가리키면 수종·밀도·출처가 나오고, 누르면 아래 논문 카드로 이동합니다. R(방사)·T(접선)는 각각 표시하며 미수록 값은 생략합니다.</p>
+                <p class="text-muted small mb-3">실측 점을 가리키면 수종·밀도·비중·출처가 나오고, 누르면 아래 논문 카드로 이동합니다. R(방사)·T(접선)는 각각 표시하며 미수록 값은 생략합니다.</p>
                 <p class="text-muted small mb-3">적용식이 바뀌는 경계(EC5 스크류 6 mm, NDS 6.35 mm)는 선을 끊어 표시합니다. 경계 양쪽의 값이 다를 수 있습니다.</p>
                 <p class="text-muted small mb-3">시험 형상(Full-hole/Half-hole)과 강도 평가 방식은 실측 점의 설명과 논문 카드에 표시합니다. 형상이나 항복·최대값 정의가 다른 자료는 동일 조건의 검증값으로 보지 않습니다. <a th:href="@{/explorer}">전체 논문 산점도 보기 ↗</a></p>
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                     <button type="button" id="chartScaleToggle" class="btn btn-outline-secondary btn-sm" aria-pressed="false">세로축 0부터 보기</button>
                     <span id="chartScaleDescription" class="text-muted small" aria-live="polite">세로축 자동 확대 · 표시된 값 위아래에 여백을 둡니다.</span>
                 </div>
-                <p th:if="${#lists.isEmpty(closeMatches) and #lists.isEmpty(referencePapers)}" class="text-muted small">현재 조건에서 그래프에 표시할 논문 실측값이 없습니다.</p>
+                <p th:if="${#lists.isEmpty(closeMatches) and #lists.isEmpty(referencePapers)}" id="noChartMeasurements" class="text-muted small">선택한 시험 방식과 파스너·목재·직경 조건에 해당하는 논문 실측값이 없습니다. 기준식 예측곡선은 계속 표시합니다.</p>
 
                 <div class="row g-4">
                     <div class="col-12">
@@ -219,8 +258,9 @@
             <section id="literatureComparison" class="p-3 border rounded bg-white mt-3">
                 <div class="mb-3">
                     <h5 class="fs-6 fw-bold mb-2">논문 실측값 · 별도 비교</h5>
+                    <p id="comparisonTestSetup" class="small fw-semibold mb-2">선택한 시험 방식: <span th:text="${inputTestSetup.label}"></span></p>
                     <p class="small text-muted mb-2">
-                        원문을 대조한 논문 중 같은 파스너 종류·목재 분류·제품 형태에서 밀도 차이
+                        선택한 시험 방식의 원문 대조 논문 중 같은 파스너 종류·목재 분류·제품 형태에서 밀도 차이
                         <span th:text="${densityTolerance}"></span>% 이내, 직경 차이
                         <span th:text="${diameterTolerance}"></span> mm 이내인 시험을 찾습니다.
                         차이(%)는 입력 밀도를 기준으로 계산하며, 이 기준은 비교 후보를 찾기 위한 범위입니다.
@@ -230,8 +270,8 @@
 
                 <h6 class="fw-bold">밀도·직경이 가까운 시험</h6>
                 <div th:if="${#lists.isEmpty(closeMatches)}" id="noCloseMatches" class="comparison-empty mb-3">
-                    현재 확인된 논문 데이터에 선택한 파스너 종류와 입력 밀도·직경이 가까운 시험이 없습니다.
-                    <span th:if="${sameMaterialCount == 0}">선택한 파스너·목재 분류·제품 형태의 원문 대조 데이터가 아직 없습니다.</span>
+                    선택한 시험 방식에서 파스너 종류와 입력 밀도·직경이 가까운 시험이 없습니다.
+                    <span th:if="${sameMaterialCount == 0}">선택한 시험 방식·파스너·목재 분류·제품 형태의 원문 대조 데이터가 아직 없습니다.</span>
                 </div>
                 <div th:if="${!#lists.isEmpty(closeMatches)}" id="closeMatches" class="literature-grid mb-4">
                     <th:block th:each="candidate : ${closeMatches}">
@@ -241,7 +281,7 @@
 
                 <div th:if="${!#lists.isEmpty(referencePapers)}" id="referencePapers" class="mt-4">
                     <h6 class="fw-bold">조건이 다른 참고 논문</h6>
-                    <p class="small text-muted">같은 파스너 종류·목재 분류·제품 형태이며 직경은 가깝지만, 밀도가 다르거나 미기재인 시험입니다. 입력 조건의 실험값이나 예측 정확도를 입증하는 자료로 해석하지 마세요.</p>
+                    <p class="small text-muted">선택한 시험 방식에서 같은 파스너 종류·목재 분류·제품 형태이며 직경은 가깝지만, 밀도가 다르거나 미기재인 시험입니다. 입력 조건의 실험값이나 예측 정확도를 입증하는 자료로 해석하지 마세요.</p>
                     <div class="literature-grid">
                         <th:block th:each="candidate : ${referencePapers}">
                             <div th:replace="~{fragments/literature-card :: card(${candidate})}"></div>

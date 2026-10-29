@@ -14,7 +14,27 @@ public class EmbedmentPredictionService {
     }
 
     public record Value(String id, String label, double parallel, double perpendicular,
-                        boolean commonDirection, String formula, String sourceUrl, String sourceNote) { }
+                        boolean commonDirection, String formula, String sourceUrl, String sourceNote) {
+        public String testBasisLabel() {
+            return switch (id) {
+                case "ec5" -> commonDirection ? "선공 못 규정" : "Full-hole · EN 383 계열";
+                case "nds" -> "Half-hole 시험 연구 기반";
+                case "kds" -> "시험 형상 근거 미확인";
+                default -> "별도 문헌 모델";
+            };
+        }
+
+        public String testBasisNote() {
+            return switch (id) {
+                case "ec5" -> commonDirection
+                        ? "6 mm 이하 선공 스크류에 적용한 못 규정입니다. 대직경 EN 383 비교와 구분합니다."
+                        : "최대강도 평가 계열이며, 원식의 특성밀도 대신 입력 밀도로 계산합니다.";
+                case "nds" -> "5% 오프셋 항복강도 연구 기반입니다. ASTM D5764 자체는 Half-hole과 Full-hole을 모두 다룹니다.";
+                case "kds" -> "볼트·래그나사못 규정식입니다. Full-hole 또는 Half-hole 전용 식으로 분류하지 않습니다.";
+                default -> "시험 방식에 따라 전환하는 식이 아닙니다. 해당 문헌의 적용 조건을 확인하세요.";
+            };
+        }
+    }
 
     public List<Value> predict(double density, double diameter, String woodType, FastenerType type) {
         validate(density, diameter);
