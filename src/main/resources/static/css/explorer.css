@@ -1,6 +1,21 @@
 .explorer-page { width: min(94%, 1440px); margin: 32px auto 48px; }
 .explorer-header, .explorer-chart-heading { display:flex; justify-content:space-between; align-items:center; gap:24px; flex-wrap:wrap; }
 .explorer-kicker { color:#3182f6; font-size:12px; letter-spacing:1.8px; font-weight:700; }
+#explorerFilterCard { scroll-margin-top:24px; }
+.explorer-filter-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:20px; transition:margin-bottom 450ms cubic-bezier(.2,.8,.2,1); }
+.is-filter-collapsed .explorer-filter-heading { margin-bottom:0; }
+#toggleExplorerFilters { display:inline-flex; align-items:center; gap:10px; white-space:nowrap; }
+.filter-toggle-chevron { display:inline-block; transition:transform 450ms cubic-bezier(.2,.8,.2,1); }
+.is-filter-collapsed .filter-toggle-chevron { transform:rotate(180deg); }
+.explorer-filter-panel { display:grid; grid-template-rows:1fr; opacity:1; visibility:visible; transition:grid-template-rows 450ms cubic-bezier(.2,.8,.2,1),opacity 250ms ease,visibility 0s; }
+.explorer-filter-inner { min-height:0; overflow:hidden; transform:translateY(0); transition:transform 450ms cubic-bezier(.2,.8,.2,1); }
+.is-filter-collapsed .explorer-filter-panel { grid-template-rows:0fr; opacity:0; visibility:hidden; transition:grid-template-rows 450ms cubic-bezier(.2,.8,.2,1),opacity 200ms ease,visibility 0s 450ms; }
+.is-filter-collapsed .explorer-filter-inner { transform:translateY(-8px); }
+.filter-finish-row { display:flex; justify-content:flex-end; padding-top:20px; padding-bottom:3px; }
+.filter-finish-row button:disabled { opacity:.45; cursor:default; }
+@media (prefers-reduced-motion:reduce) {
+    .explorer-filter-heading, .filter-toggle-chevron, .explorer-filter-panel, .explorer-filter-inner { transition:none !important; }
+}
 .explorer-filters { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
 .species-choice-toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px; }
 .wood-group-choice { display:flex; gap:8px; }

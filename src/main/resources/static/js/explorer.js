@@ -163,6 +163,18 @@ function readExplorerFilters() {
     return {...Object.fromEntries(names.map((name, i) => [name, document.getElementById(explorerFilterIds[i]).value])),
         species: [...explorerSelectedSpecies], woodGroup: selectedWoodGroup()};
 }
+function setExplorerFiltersExpanded(expanded, scrollToData = false) {
+    const card = document.getElementById('explorerFilterCard');
+    const panel = document.getElementById('explorerFilterPanel');
+    const toggle = document.getElementById('toggleExplorerFilters');
+    if (!expanded && panel.contains(document.activeElement)) toggle.focus({preventScroll:true});
+    toggle.setAttribute('aria-expanded', String(expanded));
+    document.getElementById('filterToggleLabel').textContent = expanded ? '선택 영역 접기' : '선택 영역 펼치기';
+    panel.inert = !expanded;
+    panel.setAttribute('aria-hidden', String(!expanded));
+    card.classList.toggle('is-filter-collapsed', !expanded);
+    if (scrollToData) card.scrollIntoView({block:'start', behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'});
+}
 function appendText(parent, tag, text, className) {
     const node = document.createElement(tag);
     node.textContent = text;
@@ -220,6 +232,12 @@ function renderExplorer() {
     const filters = readExplorerFilters();
     updateGenusSelections();
     const hasSpecies = filters.species.length > 0;
+    const activeConditions = explorerFilterIds.filter(id => id === 'directionFilter' || document.getElementById(id).value !== 'ALL')
+        .map(id => { const select = document.getElementById(id); return select.options[select.selectedIndex].text; });
+    document.getElementById('filterSelectionSummary').textContent = hasSpecies
+        ? `${woodGroupLabel(filters.woodGroup)} · ${filters.species.length}개 수종 · ${activeConditions.join(' · ')}`
+        : `${woodGroupLabel(filters.woodGroup)} · 수종을 선택해 주세요`;
+    document.getElementById('finishExplorerSelection').disabled = !hasSpecies;
     const speciesCount = explorerSpeciesOptions(data.points, filters.woodGroup).length;
     document.getElementById('selectedSpeciesCount').textContent = `${woodGroupLabel(filters.woodGroup)} · ${filters.species.length} / ${speciesCount}개 수종 선택`;
     document.getElementById('selectAllSpecies').setAttribute('aria-pressed', String(speciesCount > 0 && filters.species.length === speciesCount));
@@ -347,6 +365,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = window.woodExplorerData;
     if (!data) return;
     renderSpeciesChoices(data.points);
+    document.getElementById('toggleExplorerFilters').addEventListener('click', () => {
+        setExplorerFiltersExpanded(document.getElementById('toggleExplorerFilters').getAttribute('aria-expanded') !== 'true');
+    });
+    document.getElementById('finishExplorerSelection').addEventListener('click', () => setExplorerFiltersExpanded(false, true));
     for (const radio of document.querySelectorAll('input[name="woodGroup"]')) radio.addEventListener('change', () => {
         explorerSelectedSpecies.clear(); renderSpeciesChoices(data.points); renderExplorer();
     });

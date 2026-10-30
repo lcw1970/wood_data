@@ -1,0 +1,9 @@
+/* The head script enables the initial hidden state before the first body paint. */
+@media (prefers-reduced-motion:no-preference) {
+    .page-motion-enabled [data-page-reveal]:not(.page-reveal-ready) { opacity:0; transform:translateY(24px); }
+    .page-reveal-enter { animation:page-card-arrive 650ms cubic-bezier(.2,.8,.2,1) var(--reveal-delay,0ms) both; will-change:transform,opacity; }
+}
+@keyframes page-card-arrive {
+    from { opacity:0; transform:translateY(24px); }
+    to { opacity:1; transform:translateY(0); }
+}

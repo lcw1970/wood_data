@@ -21,16 +21,6 @@
 .formula-comp { border-left-color: #6f42c1; }
 .formula-comp-title { color: #6f42c1; }
 
-@keyframes resultHighlight {
-    0% { transform: translateY(10px); opacity: 0; }
-    50% { box-shadow: 0 0 20px rgba(13,110,253,0.2); }
-    100% { transform: translateY(0); opacity: 1; }
-}
-
-.result-animated {
-    animation: resultHighlight 0.5s ease-out forwards;
-}
-
 .main-wrapper {
     max-width: 1300px;
     width: 95%;

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script th:src="@{/js/page-motion.js(v='20261030-first-paint')}"></script>
     <title>지압강도 및 목재 압축강도 예측 계산기</title>
 
     <!-- 테마 초기화: 저장된 값 없으면 시스템 설정을 기본값으로 사용 -->
@@ -18,6 +19,7 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="stylesheet" th:href="@{/css/calculator.css}">
     <link rel="stylesheet" th:href="@{/css/theme.css}">
+    <link rel="stylesheet" th:href="@{/css/page-motion.css(v='20261030-first-paint')}">
 </head>
 
 <body class="bg-light">
@@ -28,7 +30,7 @@
     <div class="calculator-container">
 
         <!-- 헤더 카드 -->
-        <div class="toss-card d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3">
+        <div data-page-reveal class="toss-card d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3">
             <div>
                 <h1 class="h4 fw-bold mb-1">Embedment strength estimation (Beta)</h1>
                 <p class="text-muted small mb-0">Eurocode 5, NDS 2018, KDS 41 50 지압강도 및 목재 압축강도 예측</p>
@@ -49,7 +51,7 @@
 
 
         <!-- 입력 폼 카드 -->
-        <div class="toss-card">
+        <div data-page-reveal class="toss-card">
             <form th:action="@{/calculator}" method="post">
                 <div class="mb-3">
                     <label class="form-label fw-bold d-block mb-2">계산 목적 선택</label>
@@ -121,17 +123,17 @@
             </form>
         </div>
 
-        <div th:if="${inputError != null}" class="toss-card border border-danger" role="alert" th:text="${inputError}"></div>
+        <div th:if="${inputError != null}" data-page-reveal class="toss-card border border-danger" role="alert" th:text="${inputError}"></div>
 
         <!-- 결과 안내 상자 -->
-        <div th:if="${result == null}" class="toss-card text-center py-4 bg-light border border-dashed">
+        <div th:if="${result == null}" data-page-reveal class="toss-card text-center py-4 bg-light border border-dashed">
             <div class="text-muted fs-6">위 입력창에 수치를 입력하고 <strong>[계산하기]</strong> 버튼을 누르면 예측 결과가 표시됩니다.</div>
         </div>
 
         <!-- 계산 결과 카드 (서버 바인딩 값을 data-* 속성으로 전달) -->
         <div th:if="${result != null}"
              id="resultCard"
-             class="toss-card border border-primary result-animated"
+             data-page-reveal class="toss-card border border-primary"
              th:data-density="${result['density']}"
              th:data-diameter="${result['diameter']}">
 
@@ -294,7 +296,7 @@
 
         </div>
 
-        <div th:if="${result != null}" id="formulaReferences" class="toss-card">
+        <div th:if="${result != null}" id="formulaReferences" data-page-reveal class="toss-card">
             <h3 class="fs-5 fw-bold mb-3">참고식·원문 출처</h3>
             <p class="small text-muted">단위: 강도 MPa, ρ kg/m³, d mm. 원문의 밀도·비중 정의를 추가 입력 없이 확정할 수 없어 ρ_k ≈ 입력 ρ, G ≈ ρ/1000으로 계산합니다. 결과는 이 가정에 따른 참고 예측값입니다.</p>
             <p th:if="${result['fastenerType'] == 'SCREW'}" class="small text-muted">스크류 비교 조건: 축은 섬유에 직각, 횡하중, 선공, 나사산 외경 = 평활부 지름 = 입력 d, 평활부 관입 ≥ 4d, 나사산 지압 길이 ≤ 전체 지압 길이의 1/4을 가정합니다. KDS는 래그나사못의 못대 지름으로 봅니다. 실제 형상·시공을 확인한 값은 아니며 전나사 STS의 제품별 평가를 대체하지 않습니다. 따라서 6 mm 초과에서 다월과 같은 수치가 나올 수 있습니다.</p>

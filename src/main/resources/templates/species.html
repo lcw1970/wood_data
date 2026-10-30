@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script th:src="@{/js/page-motion.js(v='20261030-first-paint')}"></script>
     <title>수종별 지압강도 데이터베이스</title>
 
     <script>
@@ -99,13 +100,14 @@
         }
     </style>
     <link rel="stylesheet" th:href="@{/css/theme.css}">
+    <link rel="stylesheet" th:href="@{/css/page-motion.css(v='20261030-first-paint')}">
 </head>
 <body>
 
 <div class="container-wrapper" style="max-width: 1200px; width: min(92%, 1200px); margin: 32px auto 40px; box-sizing: border-box;">
 
     <!-- 상단 헤더 카드 -->
-    <div class="toss-card d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3">
+    <div data-page-reveal class="toss-card d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3">
         <div>
             <h1 class="toss-header-title mb-1">Wood Embedment Strength DB (Beta)</h1>
             <p class="toss-header-desc mb-0">학명 기준 목재 물성 데이터 및 원문 출처 서비스</p>
@@ -126,7 +128,7 @@
 
 
     <!-- 데이터 목록 카드 -->
-    <div class="toss-card">
+    <div data-page-reveal class="toss-card">
         <p class="text-muted small mb-3">
             <span th:text="${#lists.size(woodList)}">66</span>개 시험 조건 ·
             <span th:text="${verifiedCount}">41</span>개 논문 원문 대조 항목.
