@@ -11,7 +11,7 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="stylesheet" th:href="@{/css/calculator.css}">
     <link rel="stylesheet" th:href="@{/css/theme.css}">
-    <link rel="stylesheet" th:href="@{/css/explorer.css}">
+    <link rel="stylesheet" th:href="@{/css/explorer.css(v='20261030-genus-check')}">
 </head>
 <body>
 <main class="explorer-page">
@@ -19,7 +19,7 @@
         <div>
             <span class="explorer-kicker">LITERATURE DATA · 시험용</span>
             <h1 class="h3 fw-bold mt-2 mb-2">논문 속 지압강도, 한눈에 보기</h1>
-            <p class="text-muted mb-0">목재 분류와 수종을 고른 뒤 직경에 따른 지압강도 분포를 살펴보세요.</p>
+            <p class="text-muted mb-0">학명을 여러 개 선택해 해당 수종의 논문 실측 데이터를 함께 살펴보세요.</p>
         </div>
         <nav class="page-navigation d-flex flex-wrap align-items-center gap-2" aria-label="페이지 이동">
             <a th:href="@{/}" class="btn-toss-primary btn-home">← 메인으로</a>
@@ -35,24 +35,35 @@
 
     <section class="toss-card" aria-labelledby="filterHeading">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <h2 id="filterHeading" class="h6 fw-bold mb-0">보고 싶은 시험 조건</h2>
+            <h2 id="filterHeading" class="h6 fw-bold mb-0">1. 목재 분류 선택</h2>
             <button type="button" id="resetFilters" class="btn btn-outline-secondary btn-sm">필터 초기화</button>
         </div>
-        <div class="explorer-species-filters">
-            <div>
-                <label for="woodGroupFilter" class="form-label">목재 분류</label>
-                <select id="woodGroupFilter" class="form-select" aria-describedby="speciesFilterHelp">
-                    <option value="SOFTWOOD">침엽수</option>
-                    <option value="HARDWOOD">활엽수</option>
-                </select>
+        <fieldset class="wood-group-choice mb-4">
+            <legend class="visually-hidden">목재 분류</legend>
+            <input class="btn-check" type="radio" name="woodGroup" id="softwoodChoice" value="SOFTWOOD" checked>
+            <label class="btn btn-outline-primary" for="softwoodChoice">침엽수</label>
+            <input class="btn-check" type="radio" name="woodGroup" id="hardwoodChoice" value="HARDWOOD">
+            <label class="btn btn-outline-primary" for="hardwoodChoice">활엽수</label>
+        </fieldset>
+        <h3 class="h6 fw-bold mb-3">2. 속명별로 수종 선택</h3>
+        <div class="species-choice-toolbar">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" id="selectAllSpecies" class="btn btn-outline-primary btn-sm" aria-pressed="false">전체 선택</button>
+                <button type="button" id="clearSpecies" class="btn btn-outline-secondary btn-sm">전체 해제</button>
             </div>
-            <div><label for="speciesFilter" class="form-label">수종</label><select id="speciesFilter" class="form-select" aria-describedby="speciesFilterHelp"><option value="ALL">전체 수종</option></select></div>
+            <span id="selectedSpeciesCount" class="small fw-semibold" role="status">0개 수종 선택</span>
         </div>
-        <p id="speciesFilterHelp" class="small text-muted mt-2 mb-4">침엽수·활엽수를 먼저 고른 다음, 해당 분류의 학명(한글명)을 선택하세요. 같은 수종의 여러 논문 자료를 함께 볼 수 있습니다.</p>
+        <p id="speciesFilterHelp" class="small text-muted mb-3">선택한 분류의 수종만 속명별로 표시합니다. 원하는 수종을 여러 개 체크하세요. 전체 선택은 현재 분류에만 적용되며, 분류를 바꾸면 수종 선택을 비웁니다.</p>
+        <fieldset aria-describedby="speciesFilterHelp" class="mb-3">
+            <legend class="visually-hidden">비교할 수종 선택 · 여러 개 선택 가능</legend>
+            <div id="speciesChoices" class="species-genus-list"></div>
+        </fieldset>
+        <p id="selectedSpeciesSummary" class="small fw-semibold mb-4" role="status">비교할 수종을 하나 이상 체크해 주세요.</p>
+        <h3 class="h6 fw-bold mb-3">3. 시험 조건 좁히기 (선택)</h3>
         <div class="explorer-filters">
             <div><label for="directionFilter" class="form-label">하중 방향</label><select id="directionFilter" class="form-select">
-                <option value="PARALLEL">섬유 평행</option><option value="PERP_ALL">섬유 직각 전체</option>
-                <option value="R">직각 · R(방사)</option><option value="T">직각 · T(접선)</option><option value="ALL">모든 방향</option>
+                <option value="ALL">모든 방향</option><option value="PARALLEL">섬유 평행</option><option value="PERP_ALL">섬유 직각 전체</option>
+                <option value="R">직각 · R(방사)</option><option value="T">직각 · T(접선)</option>
             </select></div>
             <div><label for="fastenerFilter" class="form-label">파스너</label><select id="fastenerFilter" class="form-select">
                 <option value="ALL">전체</option><option value="SCREW">스크류</option><option value="DOWEL">다월·볼트 평활부</option>
@@ -73,14 +84,19 @@
             기존 미대조 <span th:text="${explorerData['excludedCount']}"></span>개 항목은 제외했습니다. 검토한 CSV에 논문을 추가하면 새로고침할 때 반영됩니다.</p>
     </section>
 
-    <section class="explorer-stats" aria-label="현재 표시한 데이터" aria-live="polite">
+    <section id="speciesSelectionPrompt" class="toss-card species-selection-prompt" aria-labelledby="speciesPromptHeading">
+        <h2 id="speciesPromptHeading" class="h5 fw-bold">비교할 수종을 하나 이상 체크해 주세요</h2>
+        <p class="text-muted mb-0">선택한 수종들의 직경–강도 그래프, 논문 수, 시험 조건과 원문 데이터를 함께 표시합니다.</p>
+    </section>
+
+    <section data-explorer-results hidden class="explorer-stats" aria-label="현재 표시한 데이터" aria-live="polite">
         <div class="toss-card"><span>표시한 강도값</span><strong id="visiblePointCount">0</strong><small>평행·직각·R/T 구분</small></div>
         <div class="toss-card"><span>시험 조건</span><strong id="visibleTrialCount">0</strong><small>동일 조건의 R/T는 1건</small></div>
         <div class="toss-card"><span>논문</span><strong id="visibleSourceCount">0</strong><small>원문 출처 확인</small></div>
         <div class="toss-card"><span>밀도 미기재 값</span><strong id="missingDensityCount">0</strong><small>보고된 비중은 상세·표에 표시</small></div>
     </section>
 
-    <section class="toss-card" aria-labelledby="scatterHeading">
+    <section data-explorer-results hidden class="toss-card" aria-labelledby="scatterHeading">
         <div class="explorer-chart-heading">
             <div><h2 id="scatterHeading" class="h5 fw-bold mb-2">직경–지압강도 산점도</h2><p id="activeDirection" class="text-muted small mb-0"></p></div>
             <div id="allDirectionViews" class="btn-group btn-group-sm" role="group" aria-label="모든 방향 그래프 표시" hidden>
@@ -112,13 +128,13 @@
         <div id="pointDetails" class="point-details mt-3" aria-live="polite"><p class="text-muted small mb-0">점에 마우스를 올려 값을 확인하거나, 점을 눌러 시험 조건과 논문 출처를 펼쳐 보세요. 아래 데이터 표에서도 선택할 수 있습니다.</p></div>
     </section>
 
-    <section class="toss-card" aria-labelledby="distributionHeading">
+    <section data-explorer-results hidden class="toss-card" aria-labelledby="distributionHeading">
         <h2 id="distributionHeading" class="h5 fw-bold mb-2">강도값의 분포</h2>
         <p class="text-muted small">현재 필터의 강도값을 10 MPa 구간으로 나눈 개수입니다. 논문 시험군 값의 분포이며 개별 시편의 확률분포는 아닙니다.</p>
         <div class="histogram-canvas"><canvas id="strengthHistogram" role="img" aria-label="침엽수 강도값 구간별 개수"></canvas></div>
     </section>
 
-    <section class="toss-card">
+    <section data-explorer-results hidden class="toss-card">
         <details><summary class="fw-bold">현재 표시한 원문 데이터 <span id="tablePointCount"></span></summary>
             <div class="table-responsive mt-3"><table class="table align-middle small explorer-table">
                 <thead><tr><th>선택</th><th>수종·제품</th><th>방향</th><th>직경</th><th>강도</th><th>밀도·비중</th><th>시험 형상·평가 방식</th><th>원문</th></tr></thead>
@@ -131,7 +147,7 @@
 <script th:inline="javascript">window.woodExplorerData = /*[[${explorerData}]]*/ null;</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script th:src="@{/js/explorer-3d.js}"></script>
-<script th:src="@{/js/explorer.js}"></script>
+<script th:src="@{/js/explorer.js(v='20261030-genus-check')}"></script>
 <script th:src="@{/js/theme.js}"></script>
 </body>
 </html>

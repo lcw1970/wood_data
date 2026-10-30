@@ -40,6 +40,36 @@ test('point count differs from trial count and histogram totals preserve every r
     assert.equal(context.strengthDistribution([]).softwood.reduce((a,b) => a+b, 0), 0);
 });
 
+test('checkbox selection combines exactly the selected species without duplicating reported points', () => {
+    assert.equal(select({species: []}).length, 0);
+    assert.deepEqual(Array.from(select({species: ['Larix kaempferi']}), p => p.direction), ['PARALLEL', 'R', 'T']);
+    const selected = select({species: ['Larix kaempferi', 'Fagus sylvatica']});
+    assert.equal(selected.length, 4);
+    assert.ok(selected.every(p => ['Larix kaempferi', 'Fagus sylvatica'].includes(p.speciesScientific)));
+    assert.deepEqual(JSON.parse(JSON.stringify(context.explorerStats(selected))), {points: 4, trials: 2, sources: 2, missingDensity: 3});
+    const histogram = context.strengthDistribution(selected);
+    assert.equal(histogram.softwood.reduce((a, b) => a + b, 0), 3);
+    assert.equal(histogram.hardwood.reduce((a, b) => a + b, 0), 1);
+    assert.equal(select({species: ['Larix kaempferi', 'Fagus sylvatica'], direction: 'R'}).length, 1);
+    assert.equal(select({species: ['Fagus sylvatica'], setup: 'HALF_HOLE'}).length, 0);
+    assert.equal(select({species: ['Larix kaempferi', 'Larix kaempferi']}).length, 3);
+    assert.equal(select({species: ['unlisted species']}).length, 0);
+    const allSpecies = Array.from(context.explorerSpeciesOptions(points, 'ALL'), option => option.value);
+    assert.equal(allSpecies.length, 3);
+    assert.equal(select({species: allSpecies}).length, points.length);
+});
+
+test('multi-selection joins every paper for a species while keeping variants and mixed taxa separate', () => {
+    const related = [base, {...base, sourceId: 'paper-other', cardId: 'other-trial'},
+        {...base, speciesScientific: 'Pinus sylvestris'},
+        {...base, speciesScientific: 'Pinus sylvestris var. mongolica'},
+        {...base, speciesScientific: 'Picea spp.; Pinus spp.; Abies spp. (SPF)'}];
+    const selected = context.selectExplorerPoints(related, {...defaults, species: ['Larix kaempferi', 'Pinus sylvestris']});
+    assert.equal(selected.length, 3);
+    assert.equal(new Set(selected.map(p => p.sourceId)).size, 2);
+    assert.ok(!selected.some(p => p.speciesScientific.includes('mongolica') || p.speciesScientific.includes('SPF')));
+});
+
 test('wood selection scopes the chart, statistics and histogram while keeping other filters', () => {
     const softwood = select({woodGroup: 'SOFTWOOD'});
     const hardwood = select({woodGroup: 'HARDWOOD'});
@@ -76,6 +106,27 @@ test('species choices follow wood group and retain mixed or unspecified taxa exp
     assert.equal(context.speciesLabel('Picea spp.'), 'Picea spp.(가문비나무속·종 미상)');
     assert.equal(context.speciesLabel('Picea spp.; Pinus spp.; Abies spp. (SPF)'), 'Picea spp. / Pinus spp. / Abies spp.(SPF 혼합 수종군)');
     assert.equal(context.speciesLabel('New species'), 'New species(한글명 미등록)');
+});
+
+test('genus sections isolate wood groups and do not merge SPF, species variants or hybrids', () => {
+    const taxa = [base, points[4],
+        {...base, speciesScientific: 'Pinus koraiensis'},
+        {...base, speciesScientific: 'Pinus radiata'},
+        {...base, speciesScientific: 'Pinus sylvestris var. mongolica'},
+        {...base, speciesScientific: 'Pinus caribaea x Pinus elliottii'},
+        {...base, speciesScientific: 'Picea abies'},
+        {...base, speciesScientific: 'Picea spp.'},
+        {...base, speciesScientific: 'Picea spp.; Pinus spp.; Abies spp. (SPF)'}];
+    const soft = context.explorerGenusGroups(taxa, 'SOFTWOOD');
+    assert.deepEqual(Array.from(soft, g => g.genus), ['Larix', 'Picea', 'Pinus', '혼합 수종군']);
+    assert.deepEqual(Array.from(soft.find(g => g.genus === 'Picea').species, s => s.value), ['Picea abies', 'Picea spp.']);
+    assert.equal(soft.find(g => g.genus === 'Pinus').species.length, 4);
+    assert.equal(soft.at(-1).species[0].value, 'Picea spp.; Pinus spp.; Abies spp. (SPF)');
+    const hard = context.explorerGenusGroups(taxa, 'HARDWOOD');
+    assert.deepEqual(Array.from(hard, g => g.genus), ['Fagus']);
+    const allVisible = soft.flatMap(g => Array.from(g.species, s => s.value));
+    assert.equal(context.selectExplorerPoints(taxa, {...defaults, species: allVisible, woodGroup: 'SOFTWOOD'}).length, 8);
+    assert.equal(context.selectExplorerPoints(taxa, {...defaults, species: allVisible, woodGroup: 'HARDWOOD'}).length, 0);
 });
 
 test('largest diameters stay inside the plot with marker and hover room', () => {

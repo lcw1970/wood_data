@@ -1,7 +1,8 @@
 const explorerCharts = [];
 let explorerAllDirectionsView = '3D', explorer3DView, explorer3DChart;
-const explorerFilterIds = ['directionFilter', 'fastenerFilter', 'setupFilter', 'basisFilter', 'productFilter', 'speciesFilter', 'woodGroupFilter'];
-const explorerDefaults = {direction: 'PARALLEL', fastener: 'ALL', setup: 'ALL', basis: 'ALL', product: 'ALL', species: 'ALL', woodGroup: 'SOFTWOOD'};
+const explorerFilterIds = ['directionFilter', 'fastenerFilter', 'setupFilter', 'basisFilter', 'productFilter'];
+const explorerDefaults = {direction: 'ALL', fastener: 'ALL', setup: 'ALL', basis: 'ALL', product: 'ALL'};
+const explorerSelectedSpecies = new Set();
 const explorerPalette = ['#3182f6', '#e58a20', '#16a68a', '#9a67d7', '#e65e83', '#639d26', '#19a5c4', '#b57853'];
 // Display names only; filtering uses the original species_scientific CSV value.
 const explorerSpeciesNames = new Map([
@@ -33,14 +34,16 @@ function productForm(point) {
     return /직교|CLT/.test(point.category) ? 'CLT' : /집성재|GLT|Glulam/.test(point.category) ? 'GLT' : 'SOLID';
 }
 function selectExplorerPoints(points, filters) {
+    const selected = Array.isArray(filters.species) ? new Set(filters.species) : null;
     return points.filter(p =>
-        (!filters.woodGroup || woodGroup(p) === filters.woodGroup) &&
+        (!filters.woodGroup || filters.woodGroup === 'ALL' || woodGroup(p) === filters.woodGroup) &&
         (filters.direction === 'ALL' || (filters.direction === 'PERP_ALL' ? p.direction !== 'PARALLEL' : p.direction === filters.direction)) &&
         (filters.fastener === 'ALL' || p.fastenerType === filters.fastener) &&
         (filters.setup === 'ALL' || p.testSetup === filters.setup) &&
         (filters.basis === 'ALL' || p.strengthBasis === filters.basis) &&
         (filters.product === 'ALL' || productForm(p) === filters.product) &&
-        (!filters.species || filters.species === 'ALL' || speciesName(p) === filters.species));
+        (selected ? selected.has(speciesName(p))
+            : filters.species !== '' && (!filters.species || filters.species === 'ALL' || speciesName(p) === filters.species)));
 }
 function strengthDistribution(points) {
     const count = Math.max(1, Math.floor(Math.max(0, ...points.map(p => p.y)) / 10) + 1);
@@ -66,26 +69,89 @@ function explorerAxisBounds(points) {
     };
 }
 function speciesName(point) { return point.speciesScientific || point.scientificName.replace(/\s*\(.+$/, ''); }
-function speciesLabel(name) {
-    const scientific = name === 'Picea spp.; Pinus spp.; Abies spp. (SPF)'
+function scientificLabel(name) {
+    return name === 'Picea spp.; Pinus spp.; Abies spp. (SPF)'
         ? 'Picea spp. / Pinus spp. / Abies spp.' : name.replace(/ x /g, ' × ');
-    return `${scientific}(${explorerSpeciesNames.get(name) || '한글명 미등록'})`;
 }
+function speciesLabel(name) { return `${scientificLabel(name)}(${explorerSpeciesNames.get(name) || '한글명 미등록'})`; }
 function explorerSpeciesOptions(points, group) {
-    return [...new Set(points.filter(p => woodGroup(p) === group).map(speciesName))]
+    return [...new Set(points.filter(p => !group || group === 'ALL' || woodGroup(p) === group).map(speciesName))]
         .sort((a, b) => a.localeCompare(b, 'en'))
         .map(value => ({value, label: speciesLabel(value)}));
 }
-function refreshSpeciesFilter(points, group) {
-    const select = document.getElementById('speciesFilter'), previous = select.value;
-    const options = explorerSpeciesOptions(points, group);
-    select.replaceChildren();
-    const all = appendText(select, 'option', '전체 수종'); all.value = 'ALL';
-    for (const {value, label} of options) {
-        const option = appendText(select, 'option', label); option.value = value;
+function explorerGenusGroups(points, group) {
+    const genera = new Map();
+    for (const option of explorerSpeciesOptions(points, group)) {
+        // Mixed-genus reports cannot be assigned to their first named genus.
+        const genus = option.value.includes(';') ? '혼합 수종군' : option.value.split(/\s+/)[0];
+        if (!genera.has(genus)) genera.set(genus, []);
+        genera.get(genus).push(option);
     }
-    select.value = options.some(option => option.value === previous) ? previous : 'ALL';
-    select.title = select.options[select.selectedIndex].text;
+    return [...genera].sort(([a], [b]) => a === '혼합 수종군' ? 1 : b === '혼합 수종군' ? -1 : a.localeCompare(b, 'en'))
+        .map(([genus, species]) => ({genus, species}));
+}
+function selectedWoodGroup() { return document.querySelector('input[name="woodGroup"]:checked').value; }
+function woodGroupLabel(group) { return group === 'SOFTWOOD' ? '침엽수' : '활엽수'; }
+function renderSpeciesChoices(points) {
+    const target = document.getElementById('speciesChoices'); target.replaceChildren();
+    for (const {genus, species} of explorerGenusGroups(points, selectedWoodGroup())) {
+        const section = document.createElement('section'); section.className = 'species-genus-group'; target.appendChild(section);
+        section.setAttribute('aria-label', genus);
+        const title = document.createElement('div'); title.className = 'species-genus-title'; section.appendChild(title);
+        const heading = document.createElement('h4'); heading.className = 'species-genus-heading'; title.appendChild(heading);
+        appendText(heading, 'strong', genus);
+        appendText(heading, 'small', `${species.length}개 수종·수종군`);
+        const groupLabel = document.createElement('label'); groupLabel.className = 'species-genus-select'; title.appendChild(groupLabel);
+        const groupCheckbox = document.createElement('input');
+        groupCheckbox.type = 'checkbox'; groupCheckbox.name = 'explorerGenus'; groupCheckbox.value = genus;
+        groupCheckbox.className = 'form-check-input'; groupCheckbox.setAttribute('aria-label', `${genus} 수종군 전체 선택`);
+        groupLabel.appendChild(groupCheckbox); appendText(groupLabel, 'span', '전체 선택');
+        groupCheckbox.addEventListener('change', () => {
+            const selected = new Set(explorerSelectedSpecies);
+            for (const {value} of species) {
+                if (groupCheckbox.checked) selected.add(value);
+                else selected.delete(value);
+            }
+            setSelectedSpecies(selected); renderExplorer();
+        });
+        const choices = document.createElement('div'); choices.className = 'species-choice-grid'; section.appendChild(choices);
+        for (const {value, label} of species) {
+            const samples = points.filter(p => speciesName(p) === value), stats = explorerStats(samples);
+            const choice = document.createElement('label'); choice.className = 'species-choice'; choices.appendChild(choice);
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox'; checkbox.name = 'explorerSpecies'; checkbox.value = value;
+            checkbox.className = 'form-check-input'; checkbox.setAttribute('aria-label', label);
+            choice.appendChild(checkbox);
+            const copy = document.createElement('span'); copy.className = 'species-choice-copy'; choice.appendChild(copy);
+            appendText(copy, 'strong', scientificLabel(value));
+            appendText(copy, 'span', explorerSpeciesNames.get(value) || '한글명 미등록', 'small text-muted');
+            appendText(copy, 'small', `논문 ${stats.sources}편 · 시험 조건 ${stats.trials}개`, 'text-muted');
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) explorerSelectedSpecies.add(value);
+                else explorerSelectedSpecies.delete(value);
+                choice.classList.toggle('is-selected', checkbox.checked);
+                renderExplorer();
+            });
+        }
+    }
+}
+function setSelectedSpecies(names) {
+    explorerSelectedSpecies.clear();
+    const selected = new Set(names);
+    for (const checkbox of document.querySelectorAll('input[name="explorerSpecies"]')) {
+        checkbox.checked = selected.has(checkbox.value);
+        if (checkbox.checked) explorerSelectedSpecies.add(checkbox.value);
+        checkbox.closest('.species-choice').classList.toggle('is-selected', checkbox.checked);
+    }
+}
+function updateGenusSelections() {
+    for (const section of document.querySelectorAll('.species-genus-group')) {
+        const members = [...section.querySelectorAll('input[name="explorerSpecies"]')];
+        const count = members.filter(checkbox => checkbox.checked).length;
+        const groupCheckbox = section.querySelector('input[name="explorerGenus"]');
+        groupCheckbox.checked = members.length > 0 && count === members.length;
+        groupCheckbox.indeterminate = count > 0 && count < members.length;
+    }
 }
 function explorerWrap(text, width = 48) { return String(text || '').match(new RegExp(`.{1,${width}}`, 'g')) || []; }
 function explorerMaterialLabel(point) {
@@ -94,7 +160,8 @@ function explorerMaterialLabel(point) {
 }
 function readExplorerFilters() {
     const names = Object.keys(explorerDefaults);
-    return Object.fromEntries(names.map((name, i) => [name, document.getElementById(explorerFilterIds[i]).value]));
+    return {...Object.fromEntries(names.map((name, i) => [name, document.getElementById(explorerFilterIds[i]).value])),
+        species: [...explorerSelectedSpecies], woodGroup: selectedWoodGroup()};
 }
 function appendText(parent, tag, text, className) {
     const node = document.createElement(tag);
@@ -150,21 +217,39 @@ function renderExplorerTable(points) {
 function renderExplorer() {
     const data = window.woodExplorerData;
     if (!data) return;
-    refreshSpeciesFilter(data.points, document.getElementById('woodGroupFilter').value);
     const filters = readExplorerFilters();
+    updateGenusSelections();
+    const hasSpecies = filters.species.length > 0;
+    const speciesCount = explorerSpeciesOptions(data.points, filters.woodGroup).length;
+    document.getElementById('selectedSpeciesCount').textContent = `${woodGroupLabel(filters.woodGroup)} · ${filters.species.length} / ${speciesCount}개 수종 선택`;
+    document.getElementById('selectAllSpecies').setAttribute('aria-pressed', String(speciesCount > 0 && filters.species.length === speciesCount));
+    for (const section of document.querySelectorAll('[data-explorer-results]')) section.hidden = !hasSpecies;
+    document.getElementById('speciesSelectionPrompt').hidden = hasSpecies;
+    const summary = document.getElementById('selectedSpeciesSummary');
+    if (!hasSpecies) {
+        summary.textContent = '비교할 수종을 하나 이상 체크해 주세요.';
+        for (const chart of explorerCharts) chart.destroy();
+        explorerCharts.length = 0; explorer3DChart = null;
+        document.getElementById('chartLoadError').hidden = true;
+        for (const id of ['visiblePointCount', 'visibleTrialCount', 'visibleSourceCount', 'missingDensityCount']) document.getElementById(id).textContent = '0';
+        renderExplorerTable([]);
+        return;
+    }
+    const speciesPoints = data.points.filter(p => woodGroup(p) === filters.woodGroup && explorerSelectedSpecies.has(speciesName(p)));
+    const speciesStats = explorerStats(speciesPoints);
+    const selectedSpecies = filters.species.length === 1 ? speciesLabel(filters.species[0]) : `선택한 ${filters.species.length}개 수종`;
+    summary.textContent = `${selectedSpecies} · 전체 보유자료: 논문 ${speciesStats.sources}편 · 시험 조건 ${speciesStats.trials}개 · 강도값 ${speciesStats.points}개`;
     const use3D = filters.direction === 'ALL' && explorerAllDirectionsView === '3D';
     const points = selectExplorerPoints(data.points, filters);
-    const group = filters.woodGroup;
-    const groupLabel = group === 'SOFTWOOD' ? '침엽수' : '활엽수';
+    const groupLabel = selectedSpecies;
     const stats = explorerStats(points);
     for (const [id, value] of Object.entries({visiblePointCount: stats.points, visibleTrialCount: stats.trials,
         visibleSourceCount: stats.sources, missingDensityCount: stats.missingDensity, tablePointCount: `(${stats.points}개)`})) {
         document.getElementById(id).textContent = value;
     }
     const direction = document.getElementById('directionFilter');
-    const selectedSpecies = filters.species === 'ALL' ? groupLabel : speciesLabel(filters.species);
     document.getElementById('activeDirection').textContent = `현재: ${selectedSpecies} · ${direction.options[direction.selectedIndex].text} · 직경 mm / 강도 MPa · 시험군 값`;
-    document.getElementById('selectedWoodName').textContent = groupLabel;
+    document.getElementById('selectedWoodName').textContent = selectedSpecies;
     document.getElementById('selectedWoodCount').textContent = `· ${points.length}개 값`;
     document.getElementById('woodEmpty').textContent = `현재 필터에 맞는 ${groupLabel} 데이터가 없습니다.`;
     document.getElementById('woodEmpty').hidden = points.length > 0;
@@ -250,9 +335,9 @@ function renderExplorer() {
     const distribution = strengthDistribution(points);
     explorerCharts.push(new Chart(document.getElementById('strengthHistogram'), {
         type: 'bar', data: {labels: distribution.labels, datasets: [
-            {label: groupLabel, data: group === 'SOFTWOOD' ? distribution.softwood : distribution.hardwood,
-                backgroundColor: group === 'SOFTWOOD' ? '#3182f6bb' : '#e58a20bb'}
-        ]}, options: {responsive: true, maintainAspectRatio: false, animation: false,
+            {label: '침엽수', data: distribution.softwood, backgroundColor: '#3182f6bb'},
+            {label: '활엽수', data: distribution.hardwood, backgroundColor: '#e58a20bb'}
+        ].filter(series => series.data.some(value => value > 0))}, options: {responsive: true, maintainAspectRatio: false, animation: false,
             scales: {x: {title: {display: true, text: '강도 구간 (MPa) · 하한 포함 / 상한 미만'}, grid: {color: grid}},
                 y: {beginAtZero: true, ticks: {precision: 0}, title: {display: true, text: '보고된 강도값 개수'}, grid: {color: grid}}}}
     }));
@@ -261,7 +346,16 @@ function renderExplorer() {
 document.addEventListener('DOMContentLoaded', () => {
     const data = window.woodExplorerData;
     if (!data) return;
+    renderSpeciesChoices(data.points);
+    for (const radio of document.querySelectorAll('input[name="woodGroup"]')) radio.addEventListener('change', () => {
+        explorerSelectedSpecies.clear(); renderSpeciesChoices(data.points); renderExplorer();
+    });
     for (const id of explorerFilterIds) document.getElementById(id).addEventListener('change', renderExplorer);
+    Object.values(explorerDefaults).forEach((value, i) => document.getElementById(explorerFilterIds[i]).value = value);
+    document.getElementById('selectAllSpecies').addEventListener('click', () => {
+        setSelectedSpecies(explorerSpeciesOptions(data.points, selectedWoodGroup()).map(option => option.value)); renderExplorer();
+    });
+    document.getElementById('clearSpecies').addEventListener('click', () => { setSelectedSpecies([]); renderExplorer(); });
     for (const mode of ['3D', '2D']) document.getElementById('view' + mode).addEventListener('click', () => {
         explorerAllDirectionsView = mode; renderExplorer();
     });
@@ -272,6 +366,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('reset3DView').addEventListener('click', () => explorer3DChart?.reset());
     document.getElementById('resetFilters').addEventListener('click', () => {
         explorerAllDirectionsView = '3D'; explorer3DView = undefined;
+        document.getElementById('softwoodChoice').checked = true;
+        renderSpeciesChoices(data.points);
+        setSelectedSpecies([]);
         Object.values(explorerDefaults).forEach((value, i) => document.getElementById(explorerFilterIds[i]).value = value);
         renderExplorer();
     });

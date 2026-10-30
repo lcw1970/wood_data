@@ -2,11 +2,33 @@
 .explorer-header, .explorer-chart-heading { display:flex; justify-content:space-between; align-items:center; gap:24px; flex-wrap:wrap; }
 .explorer-kicker { color:#3182f6; font-size:12px; letter-spacing:1.8px; font-weight:700; }
 .explorer-filters { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
-.explorer-species-filters { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,2fr); gap:16px; }
-.explorer-species-filters > div { min-width:0; }
-.explorer-filters .form-label, .explorer-species-filters .form-label { font-size:13px; font-weight:600; }
-.explorer-filters .form-select, .explorer-species-filters .form-select { font-size:14px; }
-@media(max-width:650px) { .explorer-species-filters { grid-template-columns:minmax(0,1fr); gap:12px; } }
+.species-choice-toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px; }
+.wood-group-choice { display:flex; gap:8px; }
+.wood-group-choice .btn { flex:1; max-width:180px; padding:8px 16px; font-size:14px; font-weight:600; border-radius:8px; }
+.wood-group-choice .btn-check:checked + .btn { background:#3182f6; border-color:#3182f6; color:#fff; }
+.species-genus-group { display:grid; grid-template-columns:145px minmax(0,1fr); gap:16px; padding:12px 0; border-top:1px solid var(--border-c); }
+.species-genus-heading { margin:4px 0 0; }
+.species-genus-heading strong { display:block; font-size:15px; font-style:italic; color:#3182f6; }
+[data-theme="dark"] .species-genus-heading strong { color:#7ab8ff; }
+.species-genus-heading small { display:block; font-size:12px; color:var(--text-sub); margin-top:3px; font-weight:400; }
+.species-genus-select { display:flex; align-items:center; gap:6px; width:fit-content; min-height:24px; margin-top:6px; font-size:12px; color:var(--text-sub); cursor:pointer; }
+.species-genus-select .form-check-input { flex:0 0 auto; width:14px; height:14px; margin:0; cursor:pointer; }
+.species-genus-select:focus-within { outline:2px solid #3182f6; outline-offset:3px; border-radius:3px; }
+.species-choice-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+.species-choice { display:flex; align-items:center; gap:8px; min-width:0; min-height:48px; padding:8px 10px; border:1px solid var(--border-c); border-radius:8px; background:var(--bg-inner); cursor:pointer; transition:border-color .15s,background-color .15s; }
+.species-choice:hover, .species-choice.is-selected { border-color:#3182f6; }
+.species-choice.is-selected { background:rgba(49,130,246,.1); }
+.species-choice:focus-within { outline:2px solid #3182f6; outline-offset:2px; }
+.species-choice .form-check-input { flex:0 0 auto; width:16px; height:16px; margin-top:0; cursor:pointer; }
+.species-choice-copy { display:flex; flex:1; flex-wrap:wrap; align-items:baseline; gap:2px 8px; min-width:0; overflow-wrap:anywhere; }
+.species-choice-copy strong { flex-basis:100%; font-size:13px; font-style:italic; line-height:1.4; color:var(--text-main); }
+.species-choice-copy > span, .species-choice-copy small { font-size:12px; line-height:1.5; }
+.species-selection-prompt { text-align:center; padding:48px 24px; }
+[data-explorer-results][hidden] { display:none; }
+.explorer-filters .form-label { font-size:13px; font-weight:600; }
+.explorer-filters .form-select { font-size:14px; }
+@media(max-width:1000px) { .species-genus-group { grid-template-columns:120px minmax(0,1fr); gap:12px; } .species-choice-grid { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:650px) { .species-genus-group { grid-template-columns:minmax(0,1fr); gap:8px; } .species-genus-heading { display:flex; flex-wrap:wrap; align-items:baseline; gap:8px; } .species-genus-heading small { margin:0; } }
 .explorer-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
 .explorer-stats .toss-card { padding:20px 24px; }
 .explorer-stats span, .explorer-stats small { display:block; color:var(--text-sub); font-size:12px; }
