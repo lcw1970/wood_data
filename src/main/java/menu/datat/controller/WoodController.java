@@ -34,11 +34,16 @@ public class WoodController {
     }
 
     @GetMapping("/")
+    public String home() {
+        return "index";
+    }
+
+    @GetMapping("/species")
     public String getWoodDataList(Model model) {
         List<WoodEmbedmentDto> list = readWoodData();
         model.addAttribute("woodList", list);
         model.addAttribute("verifiedCount", list.stream().filter(r -> !r.getSourceId().isBlank()).count());
-        return "index";
+        return "species";
     }
 
     @GetMapping("/calculator")

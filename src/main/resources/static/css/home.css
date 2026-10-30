@@ -1,0 +1,73 @@
+/* Reuse the existing site palette, cards, badges and primary buttons. */
+.home-page { min-height: 100svh; }
+.home-shell { width: min(92%, 1200px); min-height: calc(100svh - 64px); margin: 32px auto; display: flex; flex-direction: column; box-sizing: border-box; }
+.home-header { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+.home-header-right { display: flex; align-items: center; flex-shrink: 0; }
+.home-main { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 26px 0 32px; }
+.home-intro { text-align: center; margin-bottom: 30px; }
+.home-intro h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -.8px; margin: 0 0 10px; }
+.home-lead { margin: 0; font-size: .95rem; line-height: 1.7; color: var(--text-sub); word-break: keep-all; }
+.launch-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; list-style: none; padding: 0; margin: 0; }
+.launch-slot { min-width: 0; position: relative; animation: card-arrive 650ms cubic-bezier(.2,.8,.2,1) var(--arrival-delay) both; will-change: transform, opacity; }
+.home-page .launch-card { --card-accent: var(--toss-blue); display: flex; flex-direction: column; height: 100%; min-height: 500px; margin: 0; padding: 32px 28px; border: 1px solid transparent; border-radius: var(--toss-radius-card); text-decoration: none; position: relative; transition: transform 280ms cubic-bezier(.2,.8,.2,1), box-shadow 280ms ease, border-color 280ms ease; }
+.card-top { display: flex; align-items: center; gap: 12px; }
+.card-number { font-variant-numeric: tabular-nums; }
+.card-category { font-size: .85rem; font-weight: 500; color: var(--text-sub); }
+.card-corner { margin-left: auto; font-size: 20px; line-height: 1; color: var(--text-sub); }
+.card-art { height: 160px; margin: 32px 0 28px; color: var(--card-accent); }
+.card-art svg { width: 100%; height: 100%; overflow: visible; }
+.art-grid { stroke: currentColor; stroke-opacity: .12; stroke-width: 1; }
+.art-line { stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; }
+.art-faint { stroke-opacity: .35; }
+.art-secondary { stroke: currentColor; stroke-width: 1.5; stroke-opacity: .45; }
+.art-point { fill: currentColor; }
+.art-point-secondary { fill: var(--bg-card); stroke: currentColor; stroke-width: 1.5; }
+.art-rings { stroke: currentColor; stroke-width: 1.5; stroke-opacity: .65; }
+.card-copy h2 { font-size: 1.25rem; line-height: 1.3; font-weight: 700; letter-spacing: -.5px; margin: 0 0 12px; }
+.card-copy p { color: var(--text-sub); font-size: .9rem; line-height: 1.75; margin: 0 0 26px; word-break: keep-all; }
+.card-bottom { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: .85rem 1rem; }
+.card-arrow { font-size: 20px; line-height: 1; transition: transform 280ms ease; }
+.home-page .launch-card:focus-visible { outline: 3px solid var(--toss-blue); outline-offset: 5px; transform: translateY(-10px); box-shadow: 0 18px 34px var(--shadow-c) !important; }
+.launch-card:focus-visible .card-arrow { transform: translateX(5px); }
+@media (hover: hover) and (pointer: fine) {
+    .home-page .launch-card:hover { transform: translateY(-12px); border-color: var(--toss-blue); box-shadow: 0 18px 34px var(--shadow-c) !important; }
+    .launch-card:hover .card-arrow { transform: translateX(5px); }
+    .launch-card:hover .card-bottom { background-color: var(--toss-blue-hover); }
+}
+.home-page .launch-card:active { transform: translateY(-3px) scale(.985); }
+.skip-link { position: fixed; top: -80px; left: 20px; z-index: 10; background: var(--bg-card); color: var(--text-main); padding: 12px 20px; border: 2px solid var(--toss-blue); border-radius: 8px; }
+.skip-link:focus { top: 12px; }
+.home-header .theme-switch:focus-within { outline: 2px solid var(--toss-blue); outline-offset: 5px; border-radius: 5px; }
+@keyframes card-arrive {
+    from { opacity: 0; transform: translateY(32px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 950px) {
+    .launch-grid { gap: 16px; }
+    .home-page .launch-card { padding: 22px; }
+    .card-copy h2 { font-size: 1.15rem; }
+    .card-copy p { font-size: .82rem; }
+    .card-bottom { font-size: .82rem; }
+}
+@media (max-width: 700px) {
+    .home-shell { width: calc(100% - 32px); margin: 16px auto; min-height: calc(100svh - 32px); }
+    .home-header { padding: 22px; gap: 16px; align-items: flex-start; }
+    .home-header .toss-header-title { font-size: 1.25rem; line-height: 1.35; }
+    .home-header .toss-header-desc { font-size: .82rem; }
+    .home-main { padding: 16px 0; }
+    .home-intro { margin-bottom: 24px; }
+    .home-intro h2 { font-size: 1.25rem; }
+    .home-lead { font-size: .85rem; padding: 0 12px; }
+    .launch-grid { grid-template-columns: minmax(0, 1fr); }
+    .home-page .launch-card { min-height: 370px; padding: 28px 24px; }
+    .card-art { position: absolute; width: 130px; right: 20px; top: 50px; opacity: .8; margin: 0; height: 90px; }
+    .card-copy { margin-top: 72px; }
+    .card-copy h2 { font-size: 1.25rem; }
+    .card-copy p { font-size: .9rem; }
+    .card-bottom { font-size: .9rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .home-page *, .home-page *::before, .home-page *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+    .launch-slot, .home-page .launch-card:hover, .home-page .launch-card:focus-visible, .home-page .launch-card:active, .launch-card .card-arrow { transform: none; }
+    .launch-slot { will-change: auto; }
+}

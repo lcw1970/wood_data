@@ -3,228 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>수종별 지압강도 데이터베이스</title>
-
+    <meta name="description" content="목재 지압강도 예측식, 논문 실측 데이터와 수종별 물성을 한곳에서 탐색하세요.">
+    <title>Wood Data · 목재 강도 연구</title>
     <script>
         (function () {
-            const saved = localStorage.getItem('theme');
-            const theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            document.documentElement.setAttribute('data-theme', theme);
+            try {
+                const saved = localStorage.getItem('theme');
+                document.documentElement.dataset.theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            } catch (_) { document.documentElement.dataset.theme = 'light'; }
         })();
     </script>
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/style.css}">
-    <style>
-        /* 모바일 카드 영역 넘침 방지 및 가로 스크롤 최적화 */
-        .toss-card {
-            width: 100%;
-            box-sizing: border-box;
-            overflow: hidden;
-        }
-
-        .table-responsive {
-            width: 100% !important;
-            overflow-x: auto !important;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .toss-table {
-            min-width: 720px;
-            width: 100%;
-        }
-
-        /* 모바일 반응형 커스텀 스타일 */
-        @media (max-width: 768px) {
-            html, body {
-                overflow-x: hidden;
-                overflow-y: auto;
-            }
-            .container-wrapper {
-                margin: 0 auto 12px !important;
-                width: calc(100% - 16px) !important;
-                padding: 8px 0 0 !important;
-            }
-            .toss-card {
-                padding: 16px 14px !important;
-                margin-bottom: 12px !important;
-                border-radius: 16px !important;
-            }
-            .toss-header-title {
-                font-size: 1.25rem !important;
-                line-height: 1.25;
-                word-break: keep-all;
-            }
-            .toss-header-desc {
-                font-size: 0.82rem !important;
-                line-height: 1.35;
-            }
-            .btn-mobile-full {
-                width: 100% !important;
-                display: flex !important;
-                align-items: center;
-                justify-content: center;
-                text-align: center;
-                white-space: nowrap;
-                min-height: 48px;
-                padding: 0.85rem 1rem !important;
-                font-size: 0.95rem !important;
-                line-height: 1.2;
-                box-sizing: border-box !important;
-            }
-            .toss-table th, .toss-table td {
-                padding: 10px 8px !important;
-                font-size: 0.82rem !important;
-                white-space: nowrap;
-            }
-            .table-responsive {
-                margin: 0 -4px;
-            }
-        }
-
-        @media (max-width: 390px) {
-            .toss-card {
-                padding: 14px 12px !important;
-            }
-            .toss-header-title {
-                font-size: 1.15rem !important;
-            }
-            .toss-header-desc {
-                font-size: 0.78rem !important;
-            }
-            .btn-mobile-full {
-                font-size: 0.9rem !important;
-                letter-spacing: -0.02em;
-            }
-        }
-    </style>
     <link rel="stylesheet" th:href="@{/css/theme.css}">
+    <link rel="stylesheet" th:href="@{/css/home.css}">
 </head>
-<body>
-
-<div class="container-wrapper" style="max-width: 1200px; width: min(92%, 1200px); margin: 32px auto 40px; box-sizing: border-box;">
-
-    <!-- 상단 헤더 카드 -->
-    <div class="toss-card d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3">
+<body class="home-page">
+<a class="skip-link" href="#researchTools">연구 도구로 바로가기</a>
+<div class="home-shell">
+    <header class="toss-card home-header">
         <div>
             <h1 class="toss-header-title mb-1">Wood Embedment Strength DB (Beta)</h1>
-            <p class="toss-header-desc mb-0">학명 기준 목재 물성 데이터 및 원문 출처 서비스</p>
+            <p class="toss-header-desc mb-0">지압강도 예측 및 논문 실측 데이터 서비스</p>
         </div>
-        <div class="d-flex align-items-center gap-3 mt-2 mt-md-0">
-            <a th:href="@{/explorer}" class="btn btn-outline-primary btn-sm">논문 데이터 탐색 ↗</a>
-            <a th:href="@{/calculator}" class="btn-toss-primary btn-mobile-full">
-                예측 계산기 바로가기 ↗
-            </a>
+        <div class="home-header-right">
             <label class="theme-switch" for="theme-toggle-checkbox" aria-label="다크모드 전환">
                 <input type="checkbox" id="theme-toggle-checkbox">
-                <span class="theme-switch-track">
-                <span class="theme-switch-thumb"></span>
-            </span>
+                <span class="theme-switch-track"><span class="theme-switch-thumb"></span></span>
             </label>
         </div>
-    </div>
-
-
-
-    <!-- 데이터 목록 카드 -->
-    <div class="toss-card">
-        <p class="text-muted small mb-3">
-            <span th:text="${#lists.size(woodList)}">66</span>개 시험 조건 ·
-            <span th:text="${verifiedCount}">41</span>개 논문 원문 대조 항목.
-            수종이 같아도 시험법·파스너·하중 방향에 따라 값이 다릅니다. 새 항목은 표의 평균 또는 항복값이며 범위·설계값과 구분해 확인하세요.
-            ‘-’는 해당 항목 미수록, R/T는 방사/접선 방향입니다. 비중은 G로 표시하며 보고된 값을 그대로 제공합니다.
-        </p>
-        <!-- 검색창 -->
-        <div class="row mb-3 mb-md-4">
-            <div class="col-12 col-md-5 ms-auto">
-                <input type="text" id="searchInput" class="form-control form-control-toss" onkeyup="filterTable()" placeholder="🔍 학명, 분류, 표준, 논문, 시험 조건 검색...">
-            </div>
+    </header>
+    <main class="home-main">
+        <div class="home-intro">
+            <h2>목재 강도 분석</h2>
+            <p class="home-lead">예측식을 비교하고, 논문 속 실측값과 수종별 물성을 확인하세요.</p>
         </div>
-
-        <!-- 가로 스크롤 가능한 테이블 컨테이너 -->
-        <div class="table-responsive">
-            <table class="toss-table text-center align-middle" id="woodTable" style="min-width: 1160px;">
-                <thead>
-                <tr>
-                    <th style="width: 50px;">번호</th>
-                    <th class="text-start">학명 (Scientific Name)</th>
-                    <th>분류</th>
-                    <th>밀도 (kg/m³)·비중 G</th>
-                    <th>파스너 (mm)</th>
-                    <th>섬유평행 강도 (MPa)</th>
-                    <th>섬유직각 강도 (MPa)</th>
-                    <th>표준</th>
-                    <th>원문</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:if="${#lists.isEmpty(woodList)}">
-                    <td colspan="9" class="text-center py-4 text-muted">등록된 목재 데이터가 없습니다.</td>
-                </tr>
-                <tr th:each="wood, stat : ${woodList}">
-                    <td class="text-muted fw-semibold" th:text="${stat.count}"></td>
-                    <td class="text-start">
-                        <div class="fw-bold fst-italic" th:text="${wood.scientificName}"></div>
-                        <span class="small text-muted" th:text="${wood.sourceId != '' ? '논문 원문 대조' : '기존 등록'}"></span>
-                    </td>
-                    <td style="white-space: nowrap;">
-                        <span th:class="${#strings.contains(wood.category, '침엽수')} ? 'badge-toss-blue' : 'badge-toss-yellow'"
-                              th:text="${wood.category}">
-                        </span>
-                    </td>
-                    <td>
-                        <div th:if="${wood.densityRange != '-'}" th:text="${wood.densityRange}"></div>
-                        <div th:if="${wood.specificGravity != null}" th:text="${'G = ' + wood.specificGravity}"></div>
-                        <span th:if="${wood.densityRange == '-' and wood.specificGravity == null}">-</span>
-                    </td>
-                    <td th:text="${wood.screwRange}"></td>
-                    <td class="fw-bold text-primary" th:text="${wood.parallelStrength}"></td>
-                    <td class="fw-bold text-success" th:text="${wood.perpStrength}"></td>
-                    <td><span class="badge-toss-gray" th:text="${wood.standard}"></span></td>
-                    <td class="text-start" style="min-width: 240px; max-width: 360px; white-space: normal;">
-                        <details th:if="${wood.sourceId != ''}" class="small mb-2">
-                            <summary>출처·시험 조건</summary>
-                            <div class="fw-semibold mt-1" th:text="${wood.sourceTitle}"></div>
-                            <div class="text-muted" th:text="${wood.sourceLocation}"></div>
-                            <div class="mt-1" th:text="${wood.testSetupLabel + ' · ' + wood.strengthBasisLabel}"></div>
-                            <div class="mt-1" th:text="${wood.testConditions}"></div>
-                        </details>
-                        <th:block th:if="${wood.paperUrl != null and wood.paperUrl != '' and wood.paperUrl != '-'}">
-                            <a th:href="${wood.paperUrl}" target="_blank" rel="noopener noreferrer" class="btn-toss-link">
-                                보기 ↗
-                            </a>
-                        </th:block>
-                        <th:block th:unless="${wood.paperUrl != null and wood.paperUrl != '' and wood.paperUrl != '-'}">
-                            <span class="text-muted">-</span>
-                        </th:block>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
+        <nav id="researchTools" class="home-tools" aria-label="연구 도구 선택">
+            <ul class="launch-grid">
+                <li class="launch-slot" style="--arrival-delay: 0ms">
+                    <a class="toss-card launch-card card-calculate" th:href="@{/calculator}">
+                        <div class="card-top"><span class="badge-toss-blue card-number">01</span><span class="card-category">기준식 비교</span><span class="card-corner" aria-hidden="true">↗</span></div>
+                        <div class="card-art" aria-hidden="true">
+                            <svg viewBox="0 0 280 130" fill="none">
+                                <path class="art-grid" d="M28 12v99h228M28 79h228M28 47h228M85 12v99M142 12v99M199 12v99"/>
+                                <path class="art-secondary" d="M28 35h228" stroke-dasharray="5 7"/>
+                                <path class="art-line" d="M28 24c54 4 88 19 128 30s62 16 100 19"/>
+                                <path class="art-line art-faint" d="M28 63c58 3 98 13 139 24s60 15 89 16"/>
+                                <circle class="art-point" cx="142" cy="50" r="7"/>
+                                <circle class="art-point-secondary" cx="142" cy="35" r="5"/>
+                            </svg>
+                        </div>
+                        <div class="card-copy"><h2>계산기·예측식</h2><p>밀도와 직경을 입력해<br>EC5·NDS·KDS 참고값을 비교하세요.</p></div>
+                        <div class="btn-toss-primary card-bottom"><span>예측 계산기 열기</span><span class="card-arrow" aria-hidden="true">→</span></div>
+                    </a>
+                </li>
+                <li class="launch-slot" style="--arrival-delay: 100ms">
+                    <a class="toss-card launch-card card-explore" th:href="@{/explorer}">
+                        <div class="card-top"><span class="badge-toss-blue card-number">02</span><span class="card-category">논문 실측값</span><span class="card-corner" aria-hidden="true">↗</span></div>
+                        <div class="card-art" aria-hidden="true">
+                            <svg viewBox="0 0 280 130" fill="none">
+                                <path class="art-grid" d="M28 12v99h228M28 79h228M28 47h228M85 12v99M142 12v99M199 12v99"/>
+                                <path class="art-secondary" d="m38 99 204-76" stroke-dasharray="5 7"/>
+                                <g class="art-point"><circle cx="51" cy="91" r="5"/><circle cx="85" cy="76" r="6"/><circle cx="111" cy="87" r="4"/><circle cx="139" cy="54" r="7"/><circle cx="181" cy="47" r="5"/><circle cx="221" cy="28" r="6"/></g>
+                                <g class="art-point-secondary"><circle cx="64" cy="69" r="4"/><circle cx="113" cy="60" r="5"/><circle cx="166" cy="70" r="4"/><circle cx="206" cy="54" r="5"/><circle cx="246" cy="34" r="4"/></g>
+                            </svg>
+                        </div>
+                        <div class="card-copy"><h2>데이터 표본 확인</h2><p>논문 실측값의 분포를 살펴보고<br>수종과 시험 조건별로 탐색하세요.</p></div>
+                        <div class="btn-toss-primary card-bottom"><span>논문 데이터 탐색하기</span><span class="card-arrow" aria-hidden="true">→</span></div>
+                    </a>
+                </li>
+                <li class="launch-slot" style="--arrival-delay: 200ms">
+                    <a class="toss-card launch-card card-species" th:href="@{/species}">
+                        <div class="card-top"><span class="badge-toss-blue card-number">03</span><span class="card-category">수종별 물성</span><span class="card-corner" aria-hidden="true">↗</span></div>
+                        <div class="card-art" aria-hidden="true">
+                            <svg viewBox="0 0 280 130" fill="none">
+                                <g class="art-rings">
+                                    <path d="M141 6c-45 0-72 24-72 57s27 59 72 59 72-26 72-59S186 6 141 6Z"/>
+                                    <path d="M141 19c-34 0-56 18-56 44s22 45 56 45 56-19 56-45-22-44-56-44Z"/>
+                                    <path d="M141 32c-26 0-40 14-40 31s14 31 40 31 40-14 40-31-14-31-40-31Z"/>
+                                    <path d="M141 45c-14 0-24 7-24 18s10 18 24 18 24-7 24-18-10-18-24-18Z"/>
+                                </g>
+                                <path class="art-secondary" d="m141 63 65-47M141 63l-45 47"/>
+                                <circle class="art-point" cx="141" cy="63" r="5"/>
+                            </svg>
+                        </div>
+                        <div class="card-copy"><h2>수종 데이터</h2><p>학명별 밀도·비중과 강도,<br>논문 출처를 목록으로 확인하세요.</p></div>
+                        <div class="btn-toss-primary card-bottom"><span>수종 데이터 목록 보기</span><span class="card-arrow" aria-hidden="true">→</span></div>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </main>
 </div>
-
-<script>
-    function filterTable() {
-        let input = document.getElementById("searchInput");
-        let filter = input.value.toLowerCase();
-        let table = document.getElementById("woodTable");
-        let tr = table.getElementsByTagName("tr");
-
-        for (let i = 1; i < tr.length; i++) {
-            if (tr[i].getElementsByTagName("td").length < 9) continue;
-            let fullText = tr[i].textContent.toLowerCase();
-
-            if (fullText.indexOf(filter) > -1) {
-                tr[i].style.display = "";
-            } else {
-                tr[i].style.display = "none";
-            }
-        }
-    }
-</script>
 <script th:src="@{/js/theme.js}"></script>
 </body>
 </html>

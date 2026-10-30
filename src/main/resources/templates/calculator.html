@@ -33,8 +33,9 @@
                 <h1 class="h4 fw-bold mb-1">Embedment strength estimation (Beta)</h1>
                 <p class="text-muted small mb-0">Eurocode 5, NDS 2018, KDS 41 50 지압강도 및 목재 압축강도 예측</p>
             </div>
-            <div class="d-flex align-items-center gap-3">
-                <a th:href="@{/}" class="btn btn-outline-secondary btn-sm">← DB 목록으로</a>
+            <div class="page-navigation d-flex flex-wrap align-items-center gap-3">
+                <a th:href="@{/}" class="btn-toss-primary btn-home">← 메인으로</a>
+                <a th:href="@{/species}" class="btn btn-outline-secondary btn-sm">수종 데이터</a>
                 <a th:href="@{/explorer}" class="btn btn-outline-primary btn-sm">논문 데이터 탐색 ↗</a>
                 <label class="theme-switch" for="theme-toggle-checkbox" aria-label="다크모드 전환">
                     <input type="checkbox" id="theme-toggle-checkbox">
@@ -288,7 +289,7 @@
                         </th:block>
                     </div>
                 </div>
-                <a th:href="@{/}" class="btn btn-outline-secondary btn-sm mt-3">전체 논문 데이터 보기 ↗</a>
+                <a th:href="@{/species}" class="btn btn-outline-secondary btn-sm mt-3">전체 수종 데이터 보기 ↗</a>
             </section>
 
         </div>

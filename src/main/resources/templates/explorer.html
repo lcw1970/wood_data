@@ -21,10 +21,11 @@
             <h1 class="h3 fw-bold mt-2 mb-2">논문 속 지압강도, 한눈에 보기</h1>
             <p class="text-muted mb-0">목재 분류와 수종을 고른 뒤 직경에 따른 지압강도 분포를 살펴보세요.</p>
         </div>
-        <nav class="d-flex flex-wrap align-items-center gap-2" aria-label="페이지 이동">
+        <nav class="page-navigation d-flex flex-wrap align-items-center gap-2" aria-label="페이지 이동">
+            <a th:href="@{/}" class="btn-toss-primary btn-home">← 메인으로</a>
             <a th:href="@{/literature.csv}" class="btn btn-outline-primary btn-sm">전체 논문 CSV 받기</a>
             <a th:href="@{/calculator}" class="btn btn-outline-primary btn-sm">예측 계산기</a>
-            <a th:href="@{/}" class="btn btn-outline-secondary btn-sm">논문 데이터 목록</a>
+            <a th:href="@{/species}" class="btn btn-outline-secondary btn-sm">수종 데이터 목록</a>
             <label class="theme-switch" for="theme-toggle-checkbox" aria-label="다크모드 전환">
                 <input type="checkbox" id="theme-toggle-checkbox">
                 <span class="theme-switch-track"><span class="theme-switch-thumb"></span></span>

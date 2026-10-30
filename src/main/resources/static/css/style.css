@@ -85,6 +85,18 @@ body {
     transform: translateY(-1px);
 }
 
+/* The main page is the primary destination on every tool page. */
+.btn-home {
+    min-width: 184px;
+    min-height: 44px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .page-navigation { width: 100%; }
+    .page-navigation .btn-home { width: 100%; min-height: 48px; }
+}
+
 .btn-toss-secondary {
     background-color: #e5e8eb;
     color: #4e5968 !important;

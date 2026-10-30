@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수종별 지압강도 데이터베이스</title>
+
+    <script>
+        (function () {
+            const saved = localStorage.getItem('theme');
+            const theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        /* 모바일 카드 영역 넘침 방지 및 가로 스크롤 최적화 */
+        .toss-card {
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .table-responsive {
+            width: 100% !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .toss-table {
+            min-width: 720px;
+            width: 100%;
+        }
+
+        /* 모바일 반응형 커스텀 스타일 */
+        @media (max-width: 768px) {
+            html, body {
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+            .container-wrapper {
+                margin: 0 auto 12px !important;
+                width: calc(100% - 16px) !important;
+                padding: 8px 0 0 !important;
+            }
+            .toss-card {
+                padding: 16px 14px !important;
+                margin-bottom: 12px !important;
+                border-radius: 16px !important;
+            }
+            .toss-header-title {
+                font-size: 1.25rem !important;
+                line-height: 1.25;
+                word-break: keep-all;
+            }
+            .toss-header-desc {
+                font-size: 0.82rem !important;
+                line-height: 1.35;
+            }
+            .btn-mobile-full {
+                width: 100% !important;
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                white-space: nowrap;
+                min-height: 48px;
+                padding: 0.85rem 1rem !important;
+                font-size: 0.95rem !important;
+                line-height: 1.2;
+                box-sizing: border-box !important;
+            }
+            .toss-table th, .toss-table td {
+                padding: 10px 8px !important;
+                font-size: 0.82rem !important;
+                white-space: nowrap;
+            }
+            .table-responsive {
+                margin: 0 -4px;
+            }
+        }
+
+        @media (max-width: 390px) {
+            .toss-card {
+                padding: 14px 12px !important;
+            }
+            .toss-header-title {
+                font-size: 1.15rem !important;
+            }
+            .toss-header-desc {
+                font-size: 0.78rem !important;
+            }
+            .btn-mobile-full {
+                font-size: 0.9rem !important;
+                letter-spacing: -0.02em;
+            }
+        }
+    </style>
+    <link rel="stylesheet" th:href="@{/css/theme.css}">
+</head>
+<body>
+
+<div class="container-wrapper" style="max-width: 1200px; width: min(92%, 1200px); margin: 32px auto 40px; box-sizing: border-box;">
+
+    <!-- 상단 헤더 카드 -->
+    <div class="toss-card d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3">
+        <div>
+            <h1 class="toss-header-title mb-1">Wood Embedment Strength DB (Beta)</h1>
+            <p class="toss-header-desc mb-0">학명 기준 목재 물성 데이터 및 원문 출처 서비스</p>
+        </div>
+        <div class="page-navigation d-flex flex-wrap align-items-center gap-3 mt-2 mt-md-0">
+            <a th:href="@{/}" class="btn-toss-primary btn-home">← 메인으로</a>
+            <a th:href="@{/explorer}" class="btn btn-outline-primary btn-sm">논문 데이터 탐색 ↗</a>
+            <a th:href="@{/calculator}" class="btn btn-outline-primary btn-sm">예측 계산기 ↗</a>
+            <label class="theme-switch" for="theme-toggle-checkbox" aria-label="다크모드 전환">
+                <input type="checkbox" id="theme-toggle-checkbox">
+                <span class="theme-switch-track">
+                <span class="theme-switch-thumb"></span>
+            </span>
+            </label>
+        </div>
+    </div>
+
+
+
+    <!-- 데이터 목록 카드 -->
+    <div class="toss-card">
+        <p class="text-muted small mb-3">
+            <span th:text="${#lists.size(woodList)}">66</span>개 시험 조건 ·
+            <span th:text="${verifiedCount}">41</span>개 논문 원문 대조 항목.
+            수종이 같아도 시험법·파스너·하중 방향에 따라 값이 다릅니다. 새 항목은 표의 평균 또는 항복값이며 범위·설계값과 구분해 확인하세요.
+            ‘-’는 해당 항목 미수록, R/T는 방사/접선 방향입니다. 비중은 G로 표시하며 보고된 값을 그대로 제공합니다.
+        </p>
+        <!-- 검색창 -->
+        <div class="row mb-3 mb-md-4">
+            <div class="col-12 col-md-5 ms-auto">
+                <input type="text" id="searchInput" class="form-control form-control-toss" onkeyup="filterTable()" placeholder="🔍 학명, 분류, 표준, 논문, 시험 조건 검색...">
+            </div>
+        </div>
+
+        <!-- 가로 스크롤 가능한 테이블 컨테이너 -->
+        <div class="table-responsive">
+            <table class="toss-table text-center align-middle" id="woodTable" style="min-width: 1160px;">
+                <thead>
+                <tr>
+                    <th style="width: 50px;">번호</th>
+                    <th class="text-start">학명 (Scientific Name)</th>
+                    <th>분류</th>
+                    <th>밀도 (kg/m³)·비중 G</th>
+                    <th>파스너 (mm)</th>
+                    <th>섬유평행 강도 (MPa)</th>
+                    <th>섬유직각 강도 (MPa)</th>
+                    <th>표준</th>
+                    <th>원문</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(woodList)}">
+                    <td colspan="9" class="text-center py-4 text-muted">등록된 목재 데이터가 없습니다.</td>
+                </tr>
+                <tr th:each="wood, stat : ${woodList}">
+                    <td class="text-muted fw-semibold" th:text="${stat.count}"></td>
+                    <td class="text-start">
+                        <div class="fw-bold fst-italic" th:text="${wood.scientificName}"></div>
+                        <span class="small text-muted" th:text="${wood.sourceId != '' ? '논문 원문 대조' : '기존 등록'}"></span>
+                    </td>
+                    <td style="white-space: nowrap;">
+                        <span th:class="${#strings.contains(wood.category, '침엽수')} ? 'badge-toss-blue' : 'badge-toss-yellow'"
+                              th:text="${wood.category}">
+                        </span>
+                    </td>
+                    <td>
+                        <div th:if="${wood.densityRange != '-'}" th:text="${wood.densityRange}"></div>
+                        <div th:if="${wood.specificGravity != null}" th:text="${'G = ' + wood.specificGravity}"></div>
+                        <span th:if="${wood.densityRange == '-' and wood.specificGravity == null}">-</span>
+                    </td>
+                    <td th:text="${wood.screwRange}"></td>
+                    <td class="fw-bold text-primary" th:text="${wood.parallelStrength}"></td>
+                    <td class="fw-bold text-success" th:text="${wood.perpStrength}"></td>
+                    <td><span class="badge-toss-gray" th:text="${wood.standard}"></span></td>
+                    <td class="text-start" style="min-width: 240px; max-width: 360px; white-space: normal;">
+                        <details th:if="${wood.sourceId != ''}" class="small mb-2">
+                            <summary>출처·시험 조건</summary>
+                            <div class="fw-semibold mt-1" th:text="${wood.sourceTitle}"></div>
+                            <div class="text-muted" th:text="${wood.sourceLocation}"></div>
+                            <div class="mt-1" th:text="${wood.testSetupLabel + ' · ' + wood.strengthBasisLabel}"></div>
+                            <div class="mt-1" th:text="${wood.testConditions}"></div>
+                        </details>
+                        <th:block th:if="${wood.paperUrl != null and wood.paperUrl != '' and wood.paperUrl != '-'}">
+                            <a th:href="${wood.paperUrl}" target="_blank" rel="noopener noreferrer" class="btn-toss-link">
+                                보기 ↗
+                            </a>
+                        </th:block>
+                        <th:block th:unless="${wood.paperUrl != null and wood.paperUrl != '' and wood.paperUrl != '-'}">
+                            <span class="text-muted">-</span>
+                        </th:block>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function filterTable() {
+        let input = document.getElementById("searchInput");
+        let filter = input.value.toLowerCase();
+        let table = document.getElementById("woodTable");
+        let tr = table.getElementsByTagName("tr");
+
+        for (let i = 1; i < tr.length; i++) {
+            if (tr[i].getElementsByTagName("td").length < 9) continue;
+            let fullText = tr[i].textContent.toLowerCase();
+
+            if (fullText.indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+</script>
+<script th:src="@{/js/theme.js}"></script>
+</body>
+</html>
